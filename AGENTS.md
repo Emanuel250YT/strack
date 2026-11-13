@@ -182,8 +182,9 @@ under `var/`; never commit third-party footage).
   addresses, and follows a redirect only to http(s) on a name or a public address. ffmpeg resolves and
   follows playlists on its own, so under the rule it reaches the web only through `leak::egress`, a
   loopback proxy (`-http_proxy`, `Settings.egress_proxy`) that connects to public addresses alone
-  (absolute-form HTTP and `CONNECT` for HTTPS); an `rtmp://` address is pinned to its checked public IP.
-  `rtmps://` keeps the up-front check only. Platform registry entries without
+  (absolute-form HTTP and `CONNECT` for HTTPS); `FrameSource::open` hands ffmpeg a normalised URL
+  (scheme compared after parsing, never as a raw prefix): http(s) through the proxy, `rtmp` pinned to its
+  checked public IP, any other scheme (`rtmps` included) refused. Platform registry entries without
   `api_url_from_platform` count as set by the platform (checked), never as trusted.
 - Tracer inputs: `trace::start_from` probes the address (`source::probe`): an HTML page goes through
   `discover` and gets one trace per stream found (`Trace.page_url`); anything else is a stream whose

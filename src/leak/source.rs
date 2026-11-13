@@ -160,8 +160,7 @@ impl reqwest::dns::Resolve for PublicOnly {
 }
 
 /// `url` with its host replaced by one of its public addresses.
-async fn pin_public(url: &str) -> anyhow::Result<String> {
-    let mut parsed = reqwest::Url::parse(url).context("not an address")?;
+async fn pin_public(mut parsed: reqwest::Url) -> anyhow::Result<String> {
     let host = parsed.host_str().context("no host")?.to_string();
     let port = parsed.port().unwrap_or(1935);
     let ip = tokio::net::lookup_host((host.as_str(), port))
@@ -236,7 +235,7 @@ impl FfmpegFrames {
     pub fn spawn(ffmpeg: &str, url: &str, proxy: Option<SocketAddr>) -> anyhow::Result<Self> {
         let mut cmd = Command::new(ffmpeg);
         cmd.args(["-hide_banner", "-loglevel", "error", "-nostdin", "-protocol_whitelist", PROTOCOLS]);
-        if url.starts_with("http") {
+        if url.get(..4).is_some_and(|s| s.eq_ignore_ascii_case("http")) {
             cmd.args(["-reconnect", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "5"]);
             if let Some(proxy) = proxy {
                 cmd.args(["-http_proxy", &format!("http://{proxy}")]);
@@ -301,11 +300,20 @@ impl FrameSource {
         match format {
             StreamFormat::Mjpeg | StreamFormat::Jpeg => Ok(FrameSource::Native(mjpeg::open(http, url).await?)),
             _ => {
-                // RTMP does not go through an HTTP proxy: under the guard it connects to the public
-                // address checked here, not to whatever the name resolves to later.
-                let url = match (proxy, StreamFormat::from_url(url)) {
-                    (Some(_), Some(StreamFormat::Rtmp)) if url.starts_with("rtmp://") => pin_public(url).await?,
-                    _ => url.to_string(),
+                // Under the guard ffmpeg gets a normalised address it can only open safely: http(s)
+                // goes through the egress proxy, rtmp is pinned to the public address checked here
+                // (it cannot use an HTTP proxy), and every other scheme (rtmps included, whose TLS
+                // needs the name) is refused.
+                let url = match proxy {
+                    None => url.to_string(),
+                    Some(_) => {
+                        let parsed = reqwest::Url::parse(url).context("not an address")?;
+                        match parsed.scheme() {
+                            "http" | "https" => parsed.to_string(),
+                            "rtmp" => pin_public(parsed).await?,
+                            other => bail!("{other} streams are not read under the public-address rule"),
+                        }
+                    }
                 };
                 Ok(FrameSource::Ffmpeg(Box::new(FfmpegFrames::spawn(ffmpeg, &url, proxy)?)))
             }
@@ -325,6 +333,19 @@ mod tests {
     use bytes::BytesMut;
 
     use crate::leak::source::{StreamFormat, public_hop, readable_target, reader_client, take_jpeg};
+
+    #[tokio::test]
+    async fn under_the_guard_ffmpeg_only_gets_addresses_it_can_open_safely() {
+        use crate::leak::source::FrameSource;
+        let guard = Some("127.0.0.1:9".parse().expect("addr"));
+        let http = reqwest::Client::new();
+        for url in
+            ["rtmps://8.8.8.8/live/key", "RTMP://127.0.0.1/live/key", "rtmpt://8.8.8.8/live", "file:///etc/passwd"]
+        {
+            let opened = FrameSource::open(&http, url, StreamFormat::Rtmp, "ffmpeg", guard).await;
+            assert!(opened.is_err(), "{url} must not reach ffmpeg under the guard");
+        }
+    }
 
     #[test]
     fn redirects_only_go_to_public_hosts() {
