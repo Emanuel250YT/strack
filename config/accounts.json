@@ -1,0 +1,74 @@
+{
+  "accounts": [
+    {
+      "username": "admin",
+      "role": "admin",
+      "display_name": "Administración",
+      "judge_id": null,
+      "court_id": null,
+      "platform_id": null,
+      "password_hash": "$argon2id$v=19$m=19456,t=2,p=1$ivfCYJZiSFBwQ5DSwrPMvQ$Ewg8Ed/FdLVxqM6IXlC3tq/n71mDWEW7fQ68xsCsNxY",
+      "sealed_key": null,
+      "disabled": false,
+      "created_at": "2026-11-12T17:57:09.902Z"
+    },
+    {
+      "username": "fiscalia",
+      "role": "operator",
+      "display_name": "Fiscalía de Ciberdelitos",
+      "judge_id": null,
+      "court_id": null,
+      "platform_id": null,
+      "password_hash": "$argon2id$v=19$m=19456,t=2,p=1$xWP1PkScdEJdBd1MaMvVSw$V6FK4LSdI6KHDv83S+xiletGBu7LiFN7y/har+E2FDY",
+      "sealed_key": null,
+      "disabled": false,
+      "created_at": null
+    },
+    {
+      "username": "laura",
+      "role": "judge",
+      "display_name": "Dra. Laura Ficticia",
+      "judge_id": "jueza-laura-ficticia",
+      "court_id": "jg-centro-3",
+      "platform_id": null,
+      "password_hash": "$argon2id$v=19$m=19456,t=2,p=1$SiY8axFwHAW8EyBpPxE2nw$Xwoydyo7MVI3RPOZQiX8EArQbBvH7/zmjYPNKNQdNz0",
+      "sealed_key": {
+        "kdf": "argon2id-v19-m19456-t2-p1+chacha20poly1305",
+        "salt_hex": "cbb498ec1e4c764aaa12e804e3a4a63c",
+        "nonce_hex": "a88672373012493961717fb8",
+        "ciphertext_hex": "d3f23487ddc4203c91efe91e63b27b1133a55bf43d42721046a75729847fde2c1cb8521964"
+      },
+      "disabled": false,
+      "created_at": null
+    },
+    {
+      "username": "martin",
+      "role": "judge",
+      "display_name": "Dr. Martín Ejemplo",
+      "judge_id": "juez-martin-ejemplo",
+      "court_id": "jg-norte-1",
+      "platform_id": null,
+      "password_hash": "$argon2id$v=19$m=19456,t=2,p=1$C+1ZYbgEUCvzQDoOpvbfzA$ihoT3HkV3yOot2sZmeXPE1mobinuG3Af8WeRdbzWVGQ",
+      "sealed_key": {
+        "kdf": "argon2id-v19-m19456-t2-p1+chacha20poly1305",
+        "salt_hex": "2abbf530c66786cb9ec72d5ee834d941",
+        "nonce_hex": "2dfdc8357887309255aa7bba",
+        "ciphertext_hex": "11e679ec00fe5042cf1635a31408f3a56b196229eab87d8573617d91e063c3b217f149d4799a"
+      },
+      "disabled": false,
+      "created_at": null
+    },
+    {
+      "username": "tvf",
+      "role": "platform",
+      "display_name": "TV Ficticia Play",
+      "judge_id": null,
+      "court_id": null,
+      "platform_id": "tvf",
+      "password_hash": "$argon2id$v=19$m=19456,t=2,p=1$bYhaIK8QEdgiOEay8FKNAg$Eayton6OsGmCbuE6RkFnerV6KlD2BKq/I/hZcLiAZNk",
+      "sealed_key": null,
+      "disabled": false,
+      "created_at": "2026-11-13T07:33:48.700Z"
+    }
+  ]
+}

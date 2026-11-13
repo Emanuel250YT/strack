@@ -1,0 +1,46 @@
+{
+  "partido": {
+    "id": "fecha-12-norte-ejemplo",
+    "nombre": "Liga Profesional — Club Ficticio del Norte vs. Deportivo Ejemplo",
+    "titular_derechos": "Liga Profesional Ficticia",
+    "inicio_iso": "2026-11-13T21:00:00-03:00",
+    "fin_min": 105,
+    "marcas_de_agua_validas": [
+      { "prefijo": "LP26-F12-OFI", "origen": "Señal oficial del titular (plataforma propia)" },
+      { "prefijo": "LP26-F12-LIC-NORTE", "origen": "Licenciatario autorizado: Canal Norte TV (ficticio)" }
+    ],
+    "licenciatarios": [
+      {
+        "nombre": "Canal Norte TV (ficticio)",
+        "prefijo_marca": "LP26-F12-LIC-NORTE",
+        "dominios_autorizados": ["canalnorte.test", "envivo.canalnorte.test"]
+      }
+    ]
+  },
+  "juzgados": {
+    "juzgados": [
+      {
+        "id": "jg-centro-3",
+        "nombre": "Juzgado de Garantías N.º 3 (ficticio) — Distrito Judicial Centro",
+        "jurisdiccion": "Provincia Ficticia del Norte",
+        "jueces": [{ "id": "jueza-laura-ficticia", "nombre": "Dra. Laura Ficticia" }]
+      },
+      {
+        "id": "jg-norte-1",
+        "nombre": "Juzgado de Garantías N.º 1 (ficticio) — Distrito Judicial Norte",
+        "jurisdiccion": "Provincia Ficticia del Norte",
+        "jueces": [{ "id": "juez-martin-ejemplo", "nombre": "Dr. Martín Ejemplo" }]
+      }
+    ],
+    "turnos": [
+      { "juez_id": "jueza-laura-ficticia", "desde_min": -60, "hasta_min": 50 },
+      { "juez_id": "juez-martin-ejemplo", "desde_min": 50, "hasta_min": 240 }
+    ]
+  },
+  "proveedores": [
+    { "id": "aurora", "nombre": "Conectividad Aurora (ficticio)", "tamano": "grande", "clientes": 3800000, "capacidades": ["ip", "dominio"], "api_url": "http://127.0.0.1:9101" },
+    { "id": "andina", "nombre": "Red Andina Telecom (ficticio)", "tamano": "mediano", "clientes": 1200000, "capacidades": ["ip", "dominio"], "api_url": "http://127.0.0.1:9102" },
+    { "id": "valle", "nombre": "FibraValle (ficticio)", "tamano": "chico", "clientes": 140000, "capacidades": ["dominio"], "api_url": "http://127.0.0.1:9103" },
+    { "id": "cumbre", "nombre": "Cooperativa Cumbre Conecta (ficticio)", "tamano": "chico", "clientes": 60000, "capacidades": ["ip", "dominio"], "api_url": "http://127.0.0.1:9104" }
+  ]
+}
