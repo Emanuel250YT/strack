@@ -1,0 +1,766 @@
+{
+  "audit_head": {
+    "hash": "afc9cbe6d4dab39a9ceb8e31b1d62c61e097a1b4073a29dadf2f2f6037732143",
+    "seq": 208
+  },
+  "audit_trail": [
+    {
+      "actor": "system",
+      "at": "2026-11-13T14:10:44.526Z",
+      "data": {
+        "assigned_judge": "jueza-laura-ficticia",
+        "capture_sha256": "c60104faf76e511083ffea258f135c53fd3a8a0b6a6cba7f0353d605cc959ef8",
+        "case_hash": "94fecfedead1e2429724513eea899cced35e0f9133e65dc13f600e7b30efe5b7",
+        "case_id": "EXP-2026-000001",
+        "detection_id": "D-0001",
+        "detection_minute": 2.0,
+        "detection_sha256": "ba5567aa64129941b8aedb7f0acfbbef968318b54b340ecb33e44425efec4902",
+        "recommended": "ip",
+        "related_cases": [],
+        "server_ip": "203.0.113.60",
+        "shared_ip": false,
+        "stream_host": "sa.futbolpasion.test",
+        "watermark": "LP26-FIN-OFI-S020318",
+        "watermark_verdict": "official_signal"
+      },
+      "event": "case_created",
+      "hash": "026b2bc09eac1b1520a5623643e19e7739a3ca654eaddc81fb472fc440978545",
+      "match_min": 2.043,
+      "prev_hash": "0aa062131eced72f99437bc23820aa8de8e954007928de15b6134f67373b84e2",
+      "seq": 3
+    },
+    {
+      "actor": "system",
+      "at": "2026-11-13T14:10:44.526Z",
+      "data": {
+        "case_id": "EXP-2026-000001",
+        "judge_id": "jueza-laura-ficticia"
+      },
+      "event": "judge_notified",
+      "hash": "b30bf2262eed7a54bb0277a7b29900aefbb54c63d805ce4c7e1d8ad3fad1edcd",
+      "match_min": 2.043,
+      "prev_hash": "026b2bc09eac1b1520a5623643e19e7739a3ca654eaddc81fb472fc440978545",
+      "seq": 4
+    },
+    {
+      "actor": "system",
+      "at": "2026-11-13T14:14:04.036Z",
+      "data": {
+        "case_id": "EXP-2026-000001",
+        "detection_id": "D-0004",
+        "detection_sha256": "0b2bfe65cc4f5899c94d16d2badf061b1b76714d3513176065a1d669ae217436",
+        "minute": 12.0
+      },
+      "event": "detection_attached",
+      "hash": "9b8f8903b169d35543bd28b62d7cbde404a8e3a2d529ea83d4da98d29076de9c",
+      "match_min": 12.02,
+      "prev_hash": "843ee684a569d88e25101664815fe904d59fd929adf3265e2b9ee662b2a83cf0",
+      "seq": 8
+    },
+    {
+      "actor": "system",
+      "at": "2026-11-13T14:17:23.781Z",
+      "data": {
+        "case_id": "EXP-2026-000001",
+        "detection_id": "D-0008",
+        "detection_sha256": "1a8e275215ae7f30134235bda4736fd6003f74eef7d6b8bd62a62e71695fa147",
+        "minute": 22.0
+      },
+      "event": "detection_attached",
+      "hash": "3a1341cb47db0869354c2f1db336973bc2e2e564dfee061fa2238d5f1847d598",
+      "match_min": 22.0,
+      "prev_hash": "ec6658b8e6cc1e7bfaa8c3d0597645bc8f827fd47076a618ca352ecc524b0639",
+      "seq": 14
+    },
+    {
+      "actor": "judge:jueza-laura-ficticia",
+      "at": "2026-11-13T14:17:45.808Z",
+      "data": {
+        "case_hash": "94fecfedead1e2429724513eea899cced35e0f9133e65dc13f600e7b30efe5b7",
+        "case_id": "EXP-2026-000001",
+        "decision_signature": "ab4aef618a982b061b6e12109aa0efffd125691ef813d8e47bfb5ebd2aa57f1a",
+        "measure": "ip",
+        "orders": [
+          "o977d-000001-aurora-1",
+          "o977d-000001-andina-1",
+          "o977d-000001-valle-1",
+          "o977d-000001-cumbre-1"
+        ]
+      },
+      "event": "case_approved",
+      "hash": "f8fbf4012e7050014c1cd7550b44f513bca32649f89f74e04fa015c6db5c5597",
+      "match_min": 23.103,
+      "prev_hash": "67f99e1809cbdc3be17567848e370d26854bc17f8c81c7ae7862a99d16c38b84",
+      "seq": 16
+    },
+    {
+      "actor": "judge:jueza-laura-ficticia",
+      "at": "2026-11-13T14:17:45.808Z",
+      "data": {
+        "attempt": 1,
+        "case_id": "EXP-2026-000001",
+        "expires_min": 105,
+        "judge_id": "jueza-laura-ficticia",
+        "kind": "ip",
+        "order_id": "o977d-000001-aurora-1",
+        "provider_id": "aurora",
+        "purpose": "original",
+        "replaces": null,
+        "target": "203.0.113.60"
+      },
+      "event": "order_signed",
+      "hash": "6377ce8eab006f9c51ce9caf665d7965e35997e6f85613f5af225164a70b713d",
+      "match_min": 23.103,
+      "prev_hash": "f8fbf4012e7050014c1cd7550b44f513bca32649f89f74e04fa015c6db5c5597",
+      "seq": 17
+    },
+    {
+      "actor": "judge:jueza-laura-ficticia",
+      "at": "2026-11-13T14:17:45.808Z",
+      "data": {
+        "attempt": 1,
+        "case_id": "EXP-2026-000001",
+        "expires_min": 105,
+        "judge_id": "jueza-laura-ficticia",
+        "kind": "ip",
+        "order_id": "o977d-000001-andina-1",
+        "provider_id": "andina",
+        "purpose": "original",
+        "replaces": null,
+        "target": "203.0.113.60"
+      },
+      "event": "order_signed",
+      "hash": "a8263acb7e0548b55e20c8b5e789ebe47d6065769bd82816abfaa53bf86762b4",
+      "match_min": 23.103,
+      "prev_hash": "6377ce8eab006f9c51ce9caf665d7965e35997e6f85613f5af225164a70b713d",
+      "seq": 18
+    },
+    {
+      "actor": "judge:jueza-laura-ficticia",
+      "at": "2026-11-13T14:17:45.808Z",
+      "data": {
+        "attempt": 1,
+        "case_id": "EXP-2026-000001",
+        "expires_min": 105,
+        "judge_id": "jueza-laura-ficticia",
+        "kind": "dominio",
+        "order_id": "o977d-000001-valle-1",
+        "provider_id": "valle",
+        "purpose": "original",
+        "replaces": null,
+        "target": "sa.futbolpasion.test"
+      },
+      "event": "order_signed",
+      "hash": "fbe841f478c71a6b66e0304fd1cd23baa214d987cb22501d6a9560ec092e0640",
+      "match_min": 23.103,
+      "prev_hash": "a8263acb7e0548b55e20c8b5e789ebe47d6065769bd82816abfaa53bf86762b4",
+      "seq": 19
+    },
+    {
+      "actor": "judge:jueza-laura-ficticia",
+      "at": "2026-11-13T14:17:45.808Z",
+      "data": {
+        "attempt": 1,
+        "case_id": "EXP-2026-000001",
+        "expires_min": 105,
+        "judge_id": "jueza-laura-ficticia",
+        "kind": "ip",
+        "order_id": "o977d-000001-cumbre-1",
+        "provider_id": "cumbre",
+        "purpose": "original",
+        "replaces": null,
+        "target": "203.0.113.60"
+      },
+      "event": "order_signed",
+      "hash": "b43b6be088f62c26820acfeee1b9c4979c9d5e02962a7449000db27d5949c76a",
+      "match_min": 23.103,
+      "prev_hash": "fbe841f478c71a6b66e0304fd1cd23baa214d987cb22501d6a9560ec092e0640",
+      "seq": 20
+    },
+    {
+      "actor": "system",
+      "at": "2026-11-13T14:17:46.441Z",
+      "data": {
+        "attempt": 1,
+        "case_id": "EXP-2026-000001",
+        "expires_min": 105,
+        "judge_id": "jueza-laura-ficticia",
+        "kind": "ip",
+        "order_id": "o977d-000001-cumbre-1",
+        "provider_id": "cumbre",
+        "purpose": "original",
+        "replaces": null,
+        "target": "203.0.113.60"
+      },
+      "event": "order_sent",
+      "hash": "5ab1b1d6ef64980125733d5fa1f9d3d1a6b95feaf46e10bc3dc910be0881ca23",
+      "match_min": 23.134,
+      "prev_hash": "b43b6be088f62c26820acfeee1b9c4979c9d5e02962a7449000db27d5949c76a",
+      "seq": 21
+    },
+    {
+      "actor": "system",
+      "at": "2026-11-13T14:17:46.441Z",
+      "data": {
+        "attempt": 1,
+        "case_id": "EXP-2026-000001",
+        "expires_min": 105,
+        "judge_id": "jueza-laura-ficticia",
+        "kind": "dominio",
+        "order_id": "o977d-000001-valle-1",
+        "provider_id": "valle",
+        "purpose": "original",
+        "replaces": null,
+        "target": "sa.futbolpasion.test"
+      },
+      "event": "order_sent",
+      "hash": "0ba86215209f8d7fc741ed20cb433d768b45db49eb62c910e697f762172a9495",
+      "match_min": 23.134,
+      "prev_hash": "5ab1b1d6ef64980125733d5fa1f9d3d1a6b95feaf46e10bc3dc910be0881ca23",
+      "seq": 22
+    },
+    {
+      "actor": "system",
+      "at": "2026-11-13T14:17:46.441Z",
+      "data": {
+        "attempt": 1,
+        "case_id": "EXP-2026-000001",
+        "expires_min": 105,
+        "judge_id": "jueza-laura-ficticia",
+        "kind": "ip",
+        "order_id": "o977d-000001-aurora-1",
+        "provider_id": "aurora",
+        "purpose": "original",
+        "replaces": null,
+        "target": "203.0.113.60"
+      },
+      "event": "order_sent",
+      "hash": "ac74132de64364fd4f3259f0e3f9357f36a88b24085798183da30c9f3ac24323",
+      "match_min": 23.134,
+      "prev_hash": "0ba86215209f8d7fc741ed20cb433d768b45db49eb62c910e697f762172a9495",
+      "seq": 23
+    },
+    {
+      "actor": "system",
+      "at": "2026-11-13T14:17:46.441Z",
+      "data": {
+        "attempt": 1,
+        "case_id": "EXP-2026-000001",
+        "expires_min": 105,
+        "judge_id": "jueza-laura-ficticia",
+        "kind": "ip",
+        "order_id": "o977d-000001-andina-1",
+        "provider_id": "andina",
+        "purpose": "original",
+        "replaces": null,
+        "target": "203.0.113.60"
+      },
+      "event": "order_sent",
+      "hash": "19d93e9cc1792ae941bd0c88d88428967979897a6a7e741f0d660a09e789ec0c",
+      "match_min": 23.134,
+      "prev_hash": "ac74132de64364fd4f3259f0e3f9357f36a88b24085798183da30c9f3ac24323",
+      "seq": 24
+    },
+    {
+      "actor": "provider:aurora",
+      "at": "2026-11-13T14:17:58.667Z",
+      "data": {
+        "applied_min": 23.708,
+        "case_id": "EXP-2026-000001",
+        "kind": "ip",
+        "order_id": "o977d-000001-aurora-1",
+        "provider_id": "aurora",
+        "target": "203.0.113.60"
+      },
+      "event": "order_applied",
+      "hash": "2f5323ca54097239d8c68f8af39d15bb0e99859d3cc097c41fa867ca90bddf04",
+      "match_min": 23.75,
+      "prev_hash": "53e0fd95773b632d724d7b30b2f26d9e3a8f091b20904576fab3d787e5bc59e0",
+      "seq": 34
+    },
+    {
+      "actor": "provider:cumbre",
+      "at": "2026-11-13T14:18:32.782Z",
+      "data": {
+        "case_id": "EXP-2026-000001",
+        "kind": "ip",
+        "order_id": "o977d-000001-cumbre-1",
+        "provider_id": "cumbre",
+        "reason": "Error interno del proveedor. Reenviar la orden con un nuevo orden_id.",
+        "target": "203.0.113.60"
+      },
+      "event": "order_failed",
+      "hash": "5497ca0d74902f21505fed1b6acec3e6267818231e1981cc5d57160620ecc491",
+      "match_min": 25.451,
+      "prev_hash": "2151beeedf07cf3c09ce0591129788a1eb5594e97f980ac5ecf8ab2f01debab5",
+      "seq": 48
+    },
+    {
+      "actor": "judge:jueza-laura-ficticia",
+      "at": "2026-11-13T14:18:32.782Z",
+      "data": {
+        "attempt": 2,
+        "basis": "approval_of_the_same_judge",
+        "case_id": "EXP-2026-000001",
+        "expires_min": 105,
+        "judge_id": "jueza-laura-ficticia",
+        "kind": "ip",
+        "order_id": "o977d-000001-cumbre-2",
+        "provider_id": "cumbre",
+        "purpose": "retry",
+        "replaces": "o977d-000001-cumbre-1",
+        "target": "203.0.113.60"
+      },
+      "event": "order_retry_signed",
+      "hash": "184d1ffe09ae027dc614b40fbee9c468422bbe3aae1659aac45f4a29b7b502a6",
+      "match_min": 25.451,
+      "prev_hash": "5497ca0d74902f21505fed1b6acec3e6267818231e1981cc5d57160620ecc491",
+      "seq": 49
+    },
+    {
+      "actor": "system",
+      "at": "2026-11-13T14:18:33.416Z",
+      "data": {
+        "attempt": 2,
+        "case_id": "EXP-2026-000001",
+        "expires_min": 105,
+        "judge_id": "jueza-laura-ficticia",
+        "kind": "ip",
+        "order_id": "o977d-000001-cumbre-2",
+        "provider_id": "cumbre",
+        "purpose": "retry",
+        "replaces": "o977d-000001-cumbre-1",
+        "target": "203.0.113.60"
+      },
+      "event": "order_sent",
+      "hash": "056d004c4e5bbf8c66529bb304667c92d458e01759cc2da6a4eac376e4c1f70a",
+      "match_min": 25.48,
+      "prev_hash": "184d1ffe09ae027dc614b40fbee9c468422bbe3aae1659aac45f4a29b7b502a6",
+      "seq": 50
+    },
+    {
+      "actor": "provider:andina",
+      "at": "2026-11-13T14:18:36.734Z",
+      "data": {
+        "applied_min": 25.613,
+        "case_id": "EXP-2026-000001",
+        "kind": "ip",
+        "order_id": "o977d-000001-andina-1",
+        "provider_id": "andina",
+        "target": "203.0.113.60"
+      },
+      "event": "order_applied",
+      "hash": "dd44d66084633c9a326a9458f62a12653ba05c4b5c1378a2e9d37e6e31d6a7b8",
+      "match_min": 25.651,
+      "prev_hash": "056d004c4e5bbf8c66529bb304667c92d458e01759cc2da6a4eac376e4c1f70a",
+      "seq": 51
+    },
+    {
+      "actor": "provider:valle",
+      "at": "2026-11-13T14:19:16.270Z",
+      "data": {
+        "applied_min": 27.56,
+        "case_id": "EXP-2026-000001",
+        "kind": "dominio",
+        "order_id": "o977d-000001-valle-1",
+        "provider_id": "valle",
+        "target": "sa.futbolpasion.test"
+      },
+      "event": "order_applied",
+      "hash": "53f98acf0b84be6291aa3e097bcfdb1234a574fa669950b0c64e7e4c5f055ad5",
+      "match_min": 27.623,
+      "prev_hash": "e040f98a91776782c2f9d48b01b99a549d2fd9cb290193c0ae8963e7a72ed890",
+      "seq": 57
+    },
+    {
+      "actor": "provider:cumbre",
+      "at": "2026-11-13T14:19:20.479Z",
+      "data": {
+        "applied_min": 27.824,
+        "case_id": "EXP-2026-000001",
+        "kind": "ip",
+        "order_id": "o977d-000001-cumbre-2",
+        "provider_id": "cumbre",
+        "target": "203.0.113.60"
+      },
+      "event": "order_applied",
+      "hash": "df2acf6522c178330486fd7e4adc6c5c579ec1abcce8e88730876eca3823078b",
+      "match_min": 27.842,
+      "prev_hash": "53f98acf0b84be6291aa3e097bcfdb1234a574fa669950b0c64e7e4c5f055ad5",
+      "seq": 58
+    },
+    {
+      "actor": "provider:aurora",
+      "at": "2026-11-13T14:45:03.821Z",
+      "data": {
+        "case_id": "EXP-2026-000001",
+        "ended_min": 105.0,
+        "kind": "ip",
+        "order_id": "o977d-000001-aurora-1",
+        "provider_id": "aurora",
+        "target": "203.0.113.60"
+      },
+      "event": "order_expired",
+      "hash": "89ee77c75b5cf3c94477d74e03bff960133194cfdd888de842bdd57cdb5b12ea",
+      "match_min": 105.001,
+      "prev_hash": "7240b8d3b2293e8eca1c225c1ac85d24091e58b809e1314615f3736bfbdabffb",
+      "seq": 177
+    },
+    {
+      "actor": "provider:cumbre",
+      "at": "2026-11-13T14:45:04.026Z",
+      "data": {
+        "case_id": "EXP-2026-000001",
+        "ended_min": 105.0,
+        "kind": "ip",
+        "order_id": "o977d-000001-cumbre-2",
+        "provider_id": "cumbre",
+        "target": "203.0.113.60"
+      },
+      "event": "order_expired",
+      "hash": "1377588903fa6207c20bce09c75eb1bdeba8c6463a09c6949abc15516eb309ea",
+      "match_min": 105.012,
+      "prev_hash": "1eb74b465f2b39070c0e9c39f8e33f271fc184e623a172c98921c81c672243b9",
+      "seq": 187
+    },
+    {
+      "actor": "provider:valle",
+      "at": "2026-11-13T14:45:04.241Z",
+      "data": {
+        "case_id": "EXP-2026-000001",
+        "ended_min": 105.0,
+        "kind": "dominio",
+        "order_id": "o977d-000001-valle-1",
+        "provider_id": "valle",
+        "target": "sa.futbolpasion.test"
+      },
+      "event": "order_expired",
+      "hash": "a1298b7e374d7bf418863603e90fd271a3c32f1475e321e44c06f3a771d7b57a",
+      "match_min": 105.022,
+      "prev_hash": "5eaa65337ea74d30685ecebaa2906b82910a05c27724f84b1e6d85ae4c02a05c",
+      "seq": 193
+    },
+    {
+      "actor": "provider:andina",
+      "at": "2026-11-13T14:45:05.080Z",
+      "data": {
+        "case_id": "EXP-2026-000001",
+        "ended_min": 105.0,
+        "kind": "ip",
+        "order_id": "o977d-000001-andina-1",
+        "provider_id": "andina",
+        "target": "203.0.113.60"
+      },
+      "event": "order_expired",
+      "hash": "0279c759e838a6fb9f8190b59af0f4f6bbea607fb4ebcbf8349be202db71a3bf",
+      "match_min": 105.071,
+      "prev_hash": "0b7f94978e06b8dbe7f878f7b51f7c7c5a7b2075134fdac6a8b1cfcd9b152d57",
+      "seq": 201
+    }
+  ],
+  "case": {
+    "assigned_judge": "jueza-laura-ficticia",
+    "case_hash": "94fecfedead1e2429724513eea899cced35e0f9133e65dc13f600e7b30efe5b7",
+    "created_at": "2026-11-13T14:10:44.526Z",
+    "created_min": 2.042639055,
+    "decision": {
+      "approved": true,
+      "at": "2026-11-13T14:17:45.808Z",
+      "court_id": "jg-centro-3",
+      "judge_id": "jueza-laura-ficticia",
+      "judge_name": "Dra. Laura Ficticia",
+      "measure": "ip",
+      "minute": 23.10279604,
+      "reason": null,
+      "signature": "ab4aef618a982b061b6e12109aa0efffd125691ef813d8e47bfb5ebd2aa57f1a"
+    },
+    "evidence": {
+      "capture": {
+        "captured_min": 2.0,
+        "decode_error": null,
+        "duration_sec": 6.0,
+        "format": "mpegts",
+        "mpegts_sync_byte": true,
+        "sha256": "c60104faf76e511083ffea258f135c53fd3a8a0b6a6cba7f0353d605cc959ef8",
+        "size_bytes": 64
+      },
+      "collateral": {
+        "co_hosted": [
+          "sa.futbolpasion.test"
+        ],
+        "findings": [],
+        "recommended": "ip",
+        "shared_ip": false,
+        "site": "futbolpasion.test"
+      },
+      "detection": {
+        "asn": 64600,
+        "captura": {
+          "capturada_min": 2.0,
+          "contenido_b64": "R18/6D88JQm0lo57ver7rFnrlpw/eNqNP48IRdwapV9ZJo1xCej7YXnoG9KBysiBQPBS+D+rp2h93eDhrLUVsg==",
+          "duracion_seg": 6,
+          "formato": "mpegts"
+        },
+        "host_stream": "sa.futbolpasion.test",
+        "id": "D-0001",
+        "ip_servidor": "203.0.113.60",
+        "marca_de_agua_extraida": "LP26-FIN-OFI-S020318",
+        "minuto": 2.0,
+        "pagina": "https://futbolpasion.test/hoy",
+        "promocion": [
+          {
+            "minuto": 1.0,
+            "red": "x",
+            "url": "https://x.example/futbolpasion_ar/status/9001"
+          }
+        ],
+        "stream_url": "https://sa.futbolpasion.test/hls/en-vivo/index.m3u8"
+      },
+      "detection_sha256": "ba5567aa64129941b8aedb7f0acfbbef968318b54b340ecb33e44425efec4902",
+      "promotion": [
+        {
+          "minuto": 1.0,
+          "red": "x",
+          "url": "https://x.example/futbolpasion_ar/status/9001"
+        }
+      ],
+      "received_at": "2026-11-13T14:10:44.526Z",
+      "received_min": 2.042639055,
+      "server": {
+        "asn_consistent": true,
+        "asn_passive_dns": 64600,
+        "asn_reported": 64600,
+        "host": "sa.futbolpasion.test",
+        "host_other_ips": [],
+        "host_seen_on_ip": true,
+        "ip": "203.0.113.60",
+        "organization": "Bruma Hosting Dedicado (ficticio)",
+        "page": "https://futbolpasion.test/hoy",
+        "stream_url": "https://sa.futbolpasion.test/hls/en-vivo/index.m3u8"
+      },
+      "watermark": {
+        "authorized_domain_of": null,
+        "extracted": "LP26-FIN-OFI-S020318",
+        "licensee": null,
+        "matched_prefix": "LP26-FIN-OFI",
+        "prefix_origin": "Señal oficial del titular (plataforma propia)",
+        "verdict": "official_signal"
+      }
+    },
+    "id": "EXP-2026-000001",
+    "proposal": {
+      "expires_domain_min": 105,
+      "expires_ip_min": 105,
+      "host": "sa.futbolpasion.test",
+      "ip": "203.0.113.60",
+      "measure": "ip",
+      "providers": [
+        {
+          "customers": 3800000,
+          "expires_min": 105,
+          "kind": "ip",
+          "note": "as_recommended",
+          "provider_id": "aurora",
+          "provider_name": "Conectividad Aurora (ficticio)",
+          "target": "203.0.113.60"
+        },
+        {
+          "customers": 1200000,
+          "expires_min": 105,
+          "kind": "ip",
+          "note": "as_recommended",
+          "provider_id": "andina",
+          "provider_name": "Red Andina Telecom (ficticio)",
+          "target": "203.0.113.60"
+        },
+        {
+          "customers": 140000,
+          "expires_min": 105,
+          "kind": "domain",
+          "note": "domain_fallback",
+          "provider_id": "valle",
+          "provider_name": "FibraValle (ficticio)",
+          "target": "sa.futbolpasion.test"
+        },
+        {
+          "customers": 60000,
+          "expires_min": 105,
+          "kind": "ip",
+          "note": "as_recommended",
+          "provider_id": "cumbre",
+          "provider_name": "Cooperativa Cumbre Conecta (ficticio)",
+          "target": "203.0.113.60"
+        }
+      ]
+    },
+    "related_cases": [],
+    "sightings": [
+      {
+        "detection_id": "D-0004",
+        "detection_sha256": "0b2bfe65cc4f5899c94d16d2badf061b1b76714d3513176065a1d669ae217436",
+        "minute": 12.0,
+        "received_at": "2026-11-13T14:14:04.036Z"
+      },
+      {
+        "detection_id": "D-0008",
+        "detection_sha256": "1a8e275215ae7f30134235bda4736fd6003f74eef7d6b8bd62a62e71695fa147",
+        "minute": 22.0,
+        "received_at": "2026-11-13T14:17:23.781Z"
+      }
+    ],
+    "status": "approved",
+    "stream_key": "sa.futbolpasion.test|203.0.113.60"
+  },
+  "checks": {
+    "case_hash_ok": true,
+    "evidence_problems": []
+  },
+  "claims": [],
+  "exported_at": "2026-11-13T14:45:34.914Z",
+  "format": "strack.case-file/1",
+  "leak_traces": [],
+  "match": {
+    "fin_min": 105.0,
+    "id": "final-01",
+    "inicio_iso": "2026-11-13T15:00:00-03:00",
+    "licenciatarios": [
+      {
+        "dominios_autorizados": [
+          "surandino.test",
+          "vivo.surandino.test"
+        ],
+        "nombre": "Canal Sur Andino (ficticio)",
+        "prefijo_marca": "LP26-FIN-LIC-SUR"
+      }
+    ],
+    "marcas_de_agua_validas": [
+      {
+        "origen": "Señal oficial del titular (plataforma propia)",
+        "prefijo": "LP26-FIN-OFI"
+      },
+      {
+        "origen": "Licenciatario autorizado: Canal Sur Andino (ficticio)",
+        "prefijo": "LP26-FIN-LIC-SUR"
+      }
+    ],
+    "nombre": "Partido final — Club Ficticio del Sur vs. Atlético Demostración",
+    "titular_derechos": "Liga Profesional Ficticia"
+  },
+  "orders": [
+    {
+      "applied_min": 23.708,
+      "attempt": 1,
+      "case_id": "EXP-2026-000001",
+      "court_id": "jg-centro-3",
+      "created_min": 23.10279604,
+      "ended_min": 105.0,
+      "expires_min": 105,
+      "judge_id": "jueza-laura-ficticia",
+      "kind": "ip",
+      "last_error": null,
+      "lift": null,
+      "order_id": "o977d-000001-aurora-1",
+      "provider_id": "aurora",
+      "purpose": "original",
+      "replaces": null,
+      "send_attempts": 1,
+      "sent_min": 23.134476430000003,
+      "signature": "8ad39ad457d9a9dd986772d36348107a21a9aaa1d31934519a667761a478db79",
+      "status": "expired",
+      "superseded_by": null,
+      "target": "203.0.113.60"
+    },
+    {
+      "applied_min": 25.613,
+      "attempt": 1,
+      "case_id": "EXP-2026-000001",
+      "court_id": "jg-centro-3",
+      "created_min": 23.10279604,
+      "ended_min": 105.0,
+      "expires_min": 105,
+      "judge_id": "jueza-laura-ficticia",
+      "kind": "ip",
+      "last_error": null,
+      "lift": null,
+      "order_id": "o977d-000001-andina-1",
+      "provider_id": "andina",
+      "purpose": "original",
+      "replaces": null,
+      "send_attempts": 1,
+      "sent_min": 23.1344774,
+      "signature": "24ad3b8ee3a2a2d1d5f6171cc0d72a1a9fbda378e87ebc4446001b5ebe8a92ea",
+      "status": "expired",
+      "superseded_by": null,
+      "target": "203.0.113.60"
+    },
+    {
+      "applied_min": 27.56,
+      "attempt": 1,
+      "case_id": "EXP-2026-000001",
+      "court_id": "jg-centro-3",
+      "created_min": 23.10279604,
+      "ended_min": 105.0,
+      "expires_min": 105,
+      "judge_id": "jueza-laura-ficticia",
+      "kind": "domain",
+      "last_error": null,
+      "lift": null,
+      "order_id": "o977d-000001-valle-1",
+      "provider_id": "valle",
+      "purpose": "original",
+      "replaces": null,
+      "send_attempts": 1,
+      "sent_min": 23.134475535,
+      "signature": "710987ddb7d1d1b615f731effa6f145fd883c172d8c784af8b569b81f73d46bd",
+      "status": "expired",
+      "superseded_by": null,
+      "target": "sa.futbolpasion.test"
+    },
+    {
+      "applied_min": null,
+      "attempt": 1,
+      "case_id": "EXP-2026-000001",
+      "court_id": "jg-centro-3",
+      "created_min": 23.10279604,
+      "ended_min": null,
+      "expires_min": 105,
+      "judge_id": "jueza-laura-ficticia",
+      "kind": "ip",
+      "last_error": "Error interno del proveedor. Reenviar la orden con un nuevo orden_id.",
+      "lift": null,
+      "order_id": "o977d-000001-cumbre-1",
+      "provider_id": "cumbre",
+      "purpose": "original",
+      "replaces": null,
+      "send_attempts": 1,
+      "sent_min": 23.134473035000003,
+      "signature": "e62a94497709fb08adbdf9088feda363e29dfc77e33b767a8dedcefa59f06880",
+      "status": "failed",
+      "superseded_by": "o977d-000001-cumbre-2",
+      "target": "203.0.113.60"
+    },
+    {
+      "applied_min": 27.824,
+      "attempt": 2,
+      "case_id": "EXP-2026-000001",
+      "court_id": "jg-centro-3",
+      "created_min": 25.45147779,
+      "ended_min": 105.0,
+      "expires_min": 105,
+      "judge_id": "jueza-laura-ficticia",
+      "kind": "ip",
+      "last_error": null,
+      "lift": null,
+      "order_id": "o977d-000001-cumbre-2",
+      "provider_id": "cumbre",
+      "purpose": "retry",
+      "replaces": "o977d-000001-cumbre-1",
+      "send_attempts": 1,
+      "sent_min": 25.480446735,
+      "signature": "eb79e009422ca4d1cdd0e7f89f04660a16fdca25d722a997146c0fd6cf5ba9c9",
+      "status": "expired",
+      "superseded_by": null,
+      "target": "203.0.113.60"
+    }
+  ]
+}

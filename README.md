@@ -83,6 +83,28 @@ flowchart LR
 | Loading streams (extra) | Prosecutors and rights holders load one or many pirate streams in **Cargar sitios** (`/ops/intake`): one per line (stream address, then the watermark their tool read, the player page and the server IP in any order), CSV, a file, or the feed's JSON. Monitoring tools use `POST /api/detections` with a bearer token (`--intake-token`). Strack resolves the server through passive DNS when no IP is given, builds the same evidence as for the feed (each detection records who loaded it) and sends new cases to the judge on duty. |
 | Leak tracing (extra, our own) | Licensed platforms hide a per-session mark (an invisible watermark plus a JPEG comment) in each subscriber's stream. Strack reads it from the pirate copy, identifies the leaking account and asks the platform to suspend it: the stream is cut at the source, with no IP or domain block. See [Leak tracing](#leak-tracing). |
 
+## Final match results
+
+The final (13 November 2026, scenario `final-01`, sped up ×3) ran against the organisers' simulator
+with human judges signing every order. Eight cases were approved and every order reached the four
+providers; two streams were dismissed automatically (not this match's signal). IP blocks expired by
+themselves at the end of the match. The exported case file and audit log are in
+[`entrega/`](entrega/README.md).
+
+Detection and block are not the same moment: the judge's review sits in between. Times in match
+minutes (one match minute is 20 real seconds at ×3):
+
+| Stretch | Who | Median | Max |
+|---|---|---|---|
+| Detection → judge's signature | the judge | 1.6 min | 21.1 min |
+| Signature → first confirmed block | Strack | 0.56 min | 0.68 min |
+| Signature → all four providers confirmed | Strack and each provider's own delay | 5.7 min | 7.1 min |
+
+The 21-minute maximum is the first three cases, which waited while the judge got started; once
+signing began no case waited more than two minutes. From the signature, Strack has the first block
+confirmed in about 11 real seconds; the rest is the providers' own reaction time, which the scenario
+makes slower for small providers.
+
 ## Practice match results
 
 Official evaluator (`evaluacion/verificar.py`) on the practice scenario, simulator at 30×, both demo

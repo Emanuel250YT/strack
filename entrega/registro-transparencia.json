@@ -1,0 +1,283 @@
+{
+  "audit_head": {
+    "hash": "afc9cbe6d4dab39a9ceb8e31b1d62c61e097a1b4073a29dadf2f2f6037732143",
+    "seq": 208
+  },
+  "entries": [
+    {
+      "case_id": "EXP-2026-000001",
+      "court": "Juzgado de Garantías N.º 3 (ficticio) — Distrito Judicial Centro",
+      "ended_min": 105.0,
+      "expires_min": 105,
+      "first_applied_min": 27.56,
+      "judge_id": "jueza-laura-ficticia",
+      "kind": "domain",
+      "lift_reason": null,
+      "ordered_by": "Dra. Laura Ficticia",
+      "ordered_min": 23.10279604,
+      "providers_applied": [
+        "FibraValle (ficticio)"
+      ],
+      "status": "expired",
+      "stream_host": "sa.futbolpasion.test",
+      "target": "sa.futbolpasion.test"
+    },
+    {
+      "case_id": "EXP-2026-000001",
+      "court": "Juzgado de Garantías N.º 3 (ficticio) — Distrito Judicial Centro",
+      "ended_min": 105.0,
+      "expires_min": 105,
+      "first_applied_min": 23.708,
+      "judge_id": "jueza-laura-ficticia",
+      "kind": "ip",
+      "lift_reason": null,
+      "ordered_by": "Dra. Laura Ficticia",
+      "ordered_min": 23.10279604,
+      "providers_applied": [
+        "Conectividad Aurora (ficticio)",
+        "Cooperativa Cumbre Conecta (ficticio)",
+        "Red Andina Telecom (ficticio)"
+      ],
+      "status": "expired",
+      "stream_host": "sa.futbolpasion.test",
+      "target": "203.0.113.60"
+    },
+    {
+      "case_id": "EXP-2026-000003",
+      "court": "Juzgado de Garantías N.º 3 (ficticio) — Distrito Judicial Centro",
+      "ended_min": 105.0,
+      "expires_min": 105,
+      "first_applied_min": 23.859,
+      "judge_id": "jueza-laura-ficticia",
+      "kind": "domain",
+      "lift_reason": null,
+      "ordered_by": "Dra. Laura Ficticia",
+      "ordered_min": 23.426765,
+      "providers_applied": [
+        "Conectividad Aurora (ficticio)",
+        "Cooperativa Cumbre Conecta (ficticio)",
+        "FibraValle (ficticio)",
+        "Red Andina Telecom (ficticio)"
+      ],
+      "status": "expired",
+      "stream_host": "play.estadio-libre.test",
+      "target": "play.estadio-libre.test"
+    },
+    {
+      "case_id": "EXP-2026-000004",
+      "court": "Juzgado de Garantías N.º 3 (ficticio) — Distrito Judicial Centro",
+      "ended_min": 105.0,
+      "expires_min": 105,
+      "first_applied_min": 24.443,
+      "judge_id": "jueza-laura-ficticia",
+      "kind": "domain",
+      "lift_reason": null,
+      "ordered_by": "Dra. Laura Ficticia",
+      "ordered_min": 24.018221125,
+      "providers_applied": [
+        "Conectividad Aurora (ficticio)",
+        "Cooperativa Cumbre Conecta (ficticio)",
+        "FibraValle (ficticio)",
+        "Red Andina Telecom (ficticio)"
+      ],
+      "status": "expired",
+      "stream_host": "hd.mirapartido.test",
+      "target": "hd.mirapartido.test"
+    },
+    {
+      "case_id": "EXP-2026-000006",
+      "court": "Juzgado de Garantías N.º 3 (ficticio) — Distrito Judicial Centro",
+      "ended_min": 105.0,
+      "expires_min": 105,
+      "first_applied_min": 34.961,
+      "judge_id": "jueza-laura-ficticia",
+      "kind": "domain",
+      "lift_reason": null,
+      "ordered_by": "Dra. Laura Ficticia",
+      "ordered_min": 27.884934875000003,
+      "providers_applied": [
+        "FibraValle (ficticio)"
+      ],
+      "status": "expired",
+      "stream_host": "sb.futbolpasion.test",
+      "target": "sb.futbolpasion.test"
+    },
+    {
+      "case_id": "EXP-2026-000006",
+      "court": "Juzgado de Garantías N.º 3 (ficticio) — Distrito Judicial Centro",
+      "ended_min": 105.0,
+      "expires_min": 105,
+      "first_applied_min": 28.483,
+      "judge_id": "jueza-laura-ficticia",
+      "kind": "ip",
+      "lift_reason": null,
+      "ordered_by": "Dra. Laura Ficticia",
+      "ordered_min": 27.884934875000003,
+      "providers_applied": [
+        "Conectividad Aurora (ficticio)",
+        "Cooperativa Cumbre Conecta (ficticio)",
+        "Red Andina Telecom (ficticio)"
+      ],
+      "status": "expired",
+      "stream_host": "sb.futbolpasion.test",
+      "target": "203.0.113.61"
+    },
+    {
+      "case_id": "EXP-2026-000007",
+      "court": "Juzgado de Garantías N.º 3 (ficticio) — Distrito Judicial Centro",
+      "ended_min": 105.0,
+      "expires_min": 105,
+      "first_applied_min": 34.964,
+      "judge_id": "jueza-laura-ficticia",
+      "kind": "domain",
+      "lift_reason": null,
+      "ordered_by": "Dra. Laura Ficticia",
+      "ordered_min": 30.54031181,
+      "providers_applied": [
+        "FibraValle (ficticio)"
+      ],
+      "status": "expired",
+      "stream_host": "relay.tvgol-gratis.test",
+      "target": "relay.tvgol-gratis.test"
+    },
+    {
+      "case_id": "EXP-2026-000007",
+      "court": "Juzgado de Garantías N.º 3 (ficticio) — Distrito Judicial Centro",
+      "ended_min": 105.0,
+      "expires_min": 105,
+      "first_applied_min": 30.949,
+      "judge_id": "jueza-laura-ficticia",
+      "kind": "ip",
+      "lift_reason": null,
+      "ordered_by": "Dra. Laura Ficticia",
+      "ordered_min": 30.54031181,
+      "providers_applied": [
+        "Conectividad Aurora (ficticio)",
+        "Cooperativa Cumbre Conecta (ficticio)",
+        "Red Andina Telecom (ficticio)"
+      ],
+      "status": "expired",
+      "stream_host": "relay.tvgol-gratis.test",
+      "target": "203.0.113.90"
+    },
+    {
+      "case_id": "EXP-2026-000008",
+      "court": "Juzgado de Garantías N.º 1 (ficticio) — Distrito Judicial Norte",
+      "ended_min": 105.0,
+      "expires_min": 105,
+      "first_applied_min": 65.77,
+      "judge_id": "juez-martin-ejemplo",
+      "kind": "domain",
+      "lift_reason": null,
+      "ordered_by": "Dr. Martín Ejemplo",
+      "ordered_min": 60.46516664,
+      "providers_applied": [
+        "FibraValle (ficticio)"
+      ],
+      "status": "expired",
+      "stream_host": "sc.futbolpasion.test",
+      "target": "sc.futbolpasion.test"
+    },
+    {
+      "case_id": "EXP-2026-000008",
+      "court": "Juzgado de Garantías N.º 1 (ficticio) — Distrito Judicial Norte",
+      "ended_min": 105.0,
+      "expires_min": 105,
+      "first_applied_min": 61.007,
+      "judge_id": "juez-martin-ejemplo",
+      "kind": "ip",
+      "lift_reason": null,
+      "ordered_by": "Dr. Martín Ejemplo",
+      "ordered_min": 60.46516664,
+      "providers_applied": [
+        "Conectividad Aurora (ficticio)",
+        "Cooperativa Cumbre Conecta (ficticio)",
+        "Red Andina Telecom (ficticio)"
+      ],
+      "status": "expired",
+      "stream_host": "sc.futbolpasion.test",
+      "target": "198.51.100.160"
+    },
+    {
+      "case_id": "EXP-2026-000009",
+      "court": "Juzgado de Garantías N.º 1 (ficticio) — Distrito Judicial Norte",
+      "ended_min": 105.0,
+      "expires_min": 105,
+      "first_applied_min": 75.02,
+      "judge_id": "juez-martin-ejemplo",
+      "kind": "domain",
+      "lift_reason": null,
+      "ordered_by": "Dr. Martín Ejemplo",
+      "ordered_min": 70.5829865,
+      "providers_applied": [
+        "FibraValle (ficticio)"
+      ],
+      "status": "expired",
+      "stream_host": "a1.canalpirata-hd.test",
+      "target": "a1.canalpirata-hd.test"
+    },
+    {
+      "case_id": "EXP-2026-000009",
+      "court": "Juzgado de Garantías N.º 1 (ficticio) — Distrito Judicial Norte",
+      "ended_min": 105.0,
+      "expires_min": 105,
+      "first_applied_min": 71.164,
+      "judge_id": "juez-martin-ejemplo",
+      "kind": "ip",
+      "lift_reason": null,
+      "ordered_by": "Dr. Martín Ejemplo",
+      "ordered_min": 70.5829865,
+      "providers_applied": [
+        "Conectividad Aurora (ficticio)",
+        "Cooperativa Cumbre Conecta (ficticio)",
+        "Red Andina Telecom (ficticio)"
+      ],
+      "status": "expired",
+      "stream_host": "a1.canalpirata-hd.test",
+      "target": "203.0.113.95"
+    },
+    {
+      "case_id": "EXP-2026-000010",
+      "court": "Juzgado de Garantías N.º 1 (ficticio) — Distrito Judicial Norte",
+      "ended_min": 105.0,
+      "expires_min": 105,
+      "first_applied_min": 94.467,
+      "judge_id": "juez-martin-ejemplo",
+      "kind": "domain",
+      "lift_reason": null,
+      "ordered_by": "Dr. Martín Ejemplo",
+      "ordered_min": 89.06851883,
+      "providers_applied": [
+        "FibraValle (ficticio)"
+      ],
+      "status": "expired",
+      "stream_host": "a2.canalpirata-hd.test",
+      "target": "a2.canalpirata-hd.test"
+    },
+    {
+      "case_id": "EXP-2026-000010",
+      "court": "Juzgado de Garantías N.º 1 (ficticio) — Distrito Judicial Norte",
+      "ended_min": 105.0,
+      "expires_min": 105,
+      "first_applied_min": 89.747,
+      "judge_id": "juez-martin-ejemplo",
+      "kind": "ip",
+      "lift_reason": null,
+      "ordered_by": "Dr. Martín Ejemplo",
+      "ordered_min": 89.06851883,
+      "providers_applied": [
+        "Conectividad Aurora (ficticio)",
+        "Cooperativa Cumbre Conecta (ficticio)",
+        "Red Andina Telecom (ficticio)"
+      ],
+      "status": "expired",
+      "stream_host": "a2.canalpirata-hd.test",
+      "target": "203.0.113.96"
+    }
+  ],
+  "exported_at": "2026-11-13T14:45:34.916Z",
+  "match": {
+    "id": "final-01",
+    "name": "Partido final — Club Ficticio del Sur vs. Atlético Demostración"
+  }
+}
