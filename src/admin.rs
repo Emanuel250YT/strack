@@ -273,7 +273,7 @@ pub fn create_platform(file: &mut PlatformsFile, input: PlatformInput<'_>) -> Re
         return Err(AdminError::InvalidUrl);
     }
     let notice_token = checked_token(input.notice_token)?.unwrap_or_else(|| random_token(16));
-    let entry = PlatformEntry { id, name: name.to_string(), api_url, notice_token };
+    let entry = PlatformEntry { id, name: name.to_string(), api_url, notice_token, api_url_from_platform: false };
     file.platforms.push(entry.clone());
     file.platforms.sort_by_key(|a| a.name.to_lowercase());
     Ok(entry)
@@ -291,6 +291,10 @@ pub fn update_platform(file: &mut PlatformsFile, input: PlatformInput<'_>) -> Re
     let token = checked_token(input.notice_token)?;
     let entry = file.platforms.iter_mut().find(|p| p.id == input.id).ok_or(AdminError::NotFound)?;
     entry.name = name.to_string();
+    if entry.api_url != api_url {
+        // Set here by an admin: trusted again (the portal marks its own changes after this call).
+        entry.api_url_from_platform = false;
+    }
     entry.api_url = api_url;
     if let Some(token) = token {
         entry.notice_token = token;

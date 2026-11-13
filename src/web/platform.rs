@@ -17,7 +17,7 @@ use crate::admin::{self, PlatformInput};
 use crate::app::App;
 use crate::judges::{Role, Session};
 use crate::leak::mark::platform_code;
-use crate::leak::platforms::PlatformEntry;
+use crate::leak::platforms::{PlatformEntry, reaches_only_public};
 use crate::leak::trace::{self, Leak, NoticeStatus, Trace};
 use crate::web::admin::change_platforms;
 use crate::web::labels;
@@ -251,6 +251,7 @@ pub async fn start_trace(State(app): State<Arc<App>>, headers: HeaderMap, Form(f
             tracing::info!(traces = ?ids, platform = %platform.id, "traces started from the platform portal");
             Redirect::to("/platform?msg=trace_started_portal#traces-title").into_response()
         }
+        Err(trace::StartError::NotAllowed) => Redirect::to("/platform?error=address_not_allowed").into_response(),
         Err(_) => Redirect::to("/platform?error=no_video_in_page").into_response(),
     }
 }
@@ -268,13 +269,24 @@ pub async fn save_integration(
         return Redirect::to("/platform?error=csrf").into_response();
     }
     let token_changed = !form.notice_token.trim().is_empty();
+    let new_url = form.api_url.trim().trim_end_matches('/').to_string();
+    if new_url != platform.api_url && !reaches_only_public(&new_url).await {
+        return Redirect::to("/platform?error=api_url_not_public#integration-title").into_response();
+    }
     let id = platform.id.clone();
     let name = platform.name.clone();
+    let changed_url = new_url != platform.api_url;
     let result = change_platforms(&app, move |file| {
-        admin::update_platform(
+        let mut entry = admin::update_platform(
             file,
             PlatformInput { id: &id, name: &name, api_url: &form.api_url, notice_token: &form.notice_token },
-        )
+        )?;
+        // An address the platform chose itself is checked again every time a notice goes out.
+        if changed_url && let Some(e) = file.platforms.iter_mut().find(|p| p.id == id) {
+            e.api_url_from_platform = true;
+            entry.api_url_from_platform = true;
+        }
+        Ok(entry)
     })
     .await;
     match result {
@@ -361,4 +373,35 @@ pub async fn guide(State(app): State<Arc<App>>, headers: HeaderMap) -> Response 
         }
     };
     Html(page("Guía de integración", Some(&session), Nav::Guide, body).into_string()).into_response()
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::leak::platforms::reaches_only_public;
+
+    #[tokio::test]
+    async fn notices_never_go_inside_the_network() {
+        for url in [
+            "http://127.0.0.1:8100",
+            "http://localhost:8100",
+            "http://10.0.0.5/api",
+            "http://192.168.1.10",
+            "http://172.16.0.1",
+            "http://169.254.169.254/latest/meta-data",
+            "http://100.64.0.1",
+            "http://0.0.0.0:80",
+            "http://[::1]:8100",
+            "http://[fd00::1]",
+            "http://[fe80::1]",
+            "http://[::ffff:127.0.0.1]",
+            "http://[64:ff9b::7f00:1]",
+            "http://[2002:7f00:1::1]",
+            "http://[::7f00:1]",
+            "not a url",
+        ] {
+            assert!(!reaches_only_public(url).await, "{url} must be refused");
+        }
+        assert!(reaches_only_public("https://8.8.8.8/api").await);
+        assert!(reaches_only_public("https://[2001:4860:4860::8888]/api").await);
+    }
 }

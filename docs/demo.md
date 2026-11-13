@@ -33,6 +33,42 @@ Stop everything with `scripts/demo-stop.ps1`; the state stays in `var/demo/` for
 Use two browser windows (or a phone for the judge): one signed in as `laura`, one as `fiscalia`.
 The theme switch in the top bar picks light or dark.
 
+## Live demo: nothing scripted
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/demo.ps1 -Live -Video <local match recording> -VideoStart 600
+```
+
+The licensed platform broadcasts the recording (read from disk only: never copy third-party footage
+into the repository; `-Audio` takes the sound from another copy with the same timeline), the pirate
+restreams it from its own address `127.0.0.2:8200`, four `strack provider` receivers take the orders and
+Aurora's also runs its network edge, an HTTP proxy on `127.0.0.1:9180`. A Chrome window opens as an
+Aurora subscriber watching the pirate through that edge. The match clock starts at `-VideoStart`, so it
+follows the picture; `laura` is on duty until minute 50.
+
+1. **The pirate on the air.** The subscriber window plays the match from the pirate site.
+2. **Load it.** As `fiscalia`, **Cargar sitios**: paste `http://127.0.0.2:8200/` and nothing else. Strack
+   finds the video in the page, reads the platform's invisible mark and opens the case within seconds:
+   the licensee's signal outside its own sites, the server, why it blocks by domain, the frame's hash.
+3. **The judge signs.** As `laura`, open the case and **Aprobar y firmar**. The order reaches the four
+   providers.
+4. **The block is real.** In the subscriber window the stream stops within a second; a reload shows the
+   provider's page "Este sitio está bloqueado por orden judicial" (HTTP 451) with the case and the order.
+5. **Going after the source.** **Cargar sitios** again with "Rastrear también la cuenta de origen": the
+   pirate's subscriber accounts are identified and suspended one after another (**Rastreo de origen**,
+   and `tvf`'s portal).
+6. **Close.** **Transparencia** lists the block with its judge and its expiry.
+
+## Without the simulator
+
+`scripts/demo.ps1 -Standalone` runs the same demo with no simulator and no challenge repository: the
+match comes from `config/match.example.json` on the wall clock (kick-off one minute before start),
+and four `strack provider` receivers (127.0.0.1:9101 to 9104) play the internet providers, keeping
+their orders in `var/demo/provider-*.json`. Detections come in the way they would in production: as
+`fiscalia`, **Cargar sitios**, upload `docs/demo-streams.csv` (three pirate streams with the official
+watermark, a licensee on its own domain and a stream of another event). Then the judge approves and
+the orders reach every receiver; the rest of the walkthrough is the same.
+
 ## Walkthrough
 
 1. **0:00 · Transparencia** (http://127.0.0.1:3000). The public page: the live match in the bar,

@@ -32,6 +32,9 @@ pub struct Settings {
     pub intake_token: Option<String>,
     /// ffmpeg, which reads pirate streams that are not MJPEG (HLS, DASH, MP4, ...).
     pub ffmpeg: String,
+    /// Let the stream reader (traces, Cargar sitios) reach local and private addresses. Off by
+    /// default so nobody can point it at internal services; local demos turn it on.
+    pub allow_private_streams: bool,
     /// Where accounts and the platform registry are saved when edited from the web.
     pub accounts_path: PathBuf,
     pub platforms_path: PathBuf,

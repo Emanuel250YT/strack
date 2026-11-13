@@ -69,11 +69,22 @@ With a human judge the time to block adds the judge's review time.
 
 ## Quick start
 
-**Fastest:** with the challenge repository in `var/challenge/`, run
+**Fastest:** `powershell -ExecutionPolicy Bypass -File scripts/demo.ps1 -Standalone` needs nothing else
+(a configured match on the wall clock, four provider receivers; load `docs/demo-streams.csv` in
+Cargar sitios). With the challenge repository in `var/challenge/`, run
 `powershell -ExecutionPolicy Bypass -File scripts/demo.ps1` (Windows). It builds Strack and starts the
 simulator, the demo licensed platform, the demo pirate and Strack with fresh state, and prints the
 addresses and accounts; [`docs/demo.md`](docs/demo.md) is a 3-minute walkthrough.
 `scripts/demo-stop.ps1` stops everything.
+
+**Live, nothing scripted:** `scripts/demo.ps1 -Live -Video <a local match recording> -VideoStart 600`
+broadcasts the recording from the licensed platform (read from disk, never copied into the repository),
+restreams it from the pirate at `127.0.0.2:8200` and opens a browser window of a subscriber of the
+Aurora provider, whose network edge (`strack provider --gateway`) enforces the orders. Load the pirate's
+page in Cargar sitios: Strack reads the platform's invisible mark from the stream and opens the case
+with that evidence; when the judge signs, the subscriber's stream stops and the block page appears.
+The stream reader only opens public internet addresses; `serve --allow-private-streams` lifts that
+for local demos (the demo script passes it).
 
 By hand. Requirements: Rust 1.85+ and Python 3.9+ (for the challenge simulator).
 
@@ -411,7 +422,13 @@ from `qualydata-org/desafio-futbol`. ffmpeg is an optional external tool, used o
 
 - No signing key is stored in clear; sessions hold the unsealed key in memory only (zeroized on drop).
 - Platform accounts (clients) are fenced to `/platform`, `/account` and public pages by a router
-  middleware (`client_scope`), not by each handler.
+  middleware (`client_scope`), not by each handler. From the portal a platform can only point its
+  notice API at a public address (every resolved IP outside loopback, private, link-local and CGNAT
+  ranges, IPv4 hidden in IPv6 included); internal addresses are set by an admin. The check runs again
+  when each notice is sent and the connection is pinned to the addresses just checked, so a DNS change
+  cannot move it inside the network; notices never follow redirects.
+- A failed sign-in names the account only when it exists: whatever was typed in the username box
+  (sometimes a password) never reaches the audit log.
 - Sessions: random 256-bit token, `HttpOnly`, `SameSite=Strict` cookie (`--secure-cookies` behind
   HTTPS), CSRF token on every form, login lockout after 5 failures, constant-time comparisons.
 - Leak tracing fetches addresses people type: pages are read as text only (no script runs), capped

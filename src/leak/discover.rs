@@ -10,7 +10,7 @@ use anyhow::{Context, bail};
 use futures_util::StreamExt;
 use reqwest::Url;
 
-use crate::leak::source::StreamFormat;
+use crate::leak::source::{StreamFormat, readable_target};
 
 /// Pages bigger than this are cut (players and their scripts are well below it).
 const MAX_PAGE: usize = 2 * 1024 * 1024;
@@ -179,11 +179,15 @@ async fn fetch_page(http: &reqwest::Client, url: &Url) -> anyhow::Result<String>
 }
 
 /// The streams of a pirate page (and of the players it embeds), best first, at most [`MAX_STREAMS`].
-pub async fn discover(http: &reqwest::Client, page: &str) -> anyhow::Result<Vec<Candidate>> {
+/// Embedded players are fetched only when `readable_target` allows their address.
+pub async fn discover(http: &reqwest::Client, page: &str, allow_private: bool) -> anyhow::Result<Vec<Candidate>> {
     let base = Url::parse(page).context("not an address")?;
     let html = fetch_page(http, &base).await?;
     let (mut streams, iframes) = extract(&html, &base);
     for frame in iframes.into_iter().take(MAX_IFRAMES) {
+        if !readable_target(frame.as_str(), allow_private).await {
+            continue;
+        }
         let Ok(inner) = fetch_page(http, &frame).await else { continue };
         let (found, _) = extract(&inner, &frame);
         for mut c in found {

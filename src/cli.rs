@@ -124,6 +124,10 @@ pub struct ServeArgs {
     /// ffmpeg, used by leak tracing to read HLS, DASH, MP4, MPEG-TS, WebM and RTMP streams.
     #[arg(long, env = "STRACK_FFMPEG", default_value = "ffmpeg")]
     pub ffmpeg: String,
+    /// Let the stream reader reach local and private addresses (local demos only: by default it
+    /// reads public internet addresses alone).
+    #[arg(long, env = "STRACK_ALLOW_PRIVATE_STREAMS")]
+    pub allow_private_streams: bool,
 }
 
 #[derive(Clone, Copy, ValueEnum)]
@@ -221,6 +225,7 @@ async fn serve(args: ServeArgs) -> anyhow::Result<()> {
         state_dir: args.state_dir.clone(),
         intake_token: args.intake_token.clone().filter(|t| !t.trim().is_empty()),
         ffmpeg: args.ffmpeg.clone(),
+        allow_private_streams: args.allow_private_streams,
         accounts_path: args.accounts.clone(),
         platforms_path: args.platforms.clone(),
     };
@@ -256,7 +261,7 @@ async fn serve(args: ServeArgs) -> anyhow::Result<()> {
     }
     let platforms = PlatformsFile::load(&args.platforms)?;
     let requests = AccessRequests::load(&settings.access_requests_path())?;
-    let http = reqwest::Client::builder().connect_timeout(Duration::from_secs(5)).user_agent("strack").build()?;
+    let http = crate::leak::source::reader_client(args.allow_private_streams)?;
     let app = Arc::new(App {
         settings,
         matches,
@@ -475,7 +480,7 @@ async fn trace(args: TraceArgs) -> anyhow::Result<()> {
         match probe(&http, &url).await? {
             Probe::Stream(format) => break format,
             Probe::Page => {
-                let found = crate::leak::discover::discover(&http, &url).await?;
+                let found = crate::leak::discover::discover(&http, &url, true).await?;
                 for c in &found {
                     eprintln!("found in the page ({}): {}", c.via, c.url);
                 }

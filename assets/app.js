@@ -112,6 +112,64 @@
     });
   });
 
+  // Step-by-step forms ("Pedir acceso"): one step at a time, typed values kept when going back, the
+  // browser's back and forward walk the steps. Without script every step shows at once.
+  document.querySelectorAll("[data-steps]").forEach(function (form) {
+    var steps = Array.prototype.slice.call(form.querySelectorAll("[data-step]"));
+    var stepper = document.querySelector("[data-stepper]");
+    var status = document.querySelector("[data-step-status]");
+    if (steps.length < 2) return;
+    form.querySelectorAll("[data-step-nav]").forEach(function (n) { n.hidden = false; });
+    form.querySelectorAll("[data-step-back]").forEach(function (b) { b.hidden = false; });
+    var current = 0;
+    function show(i, focus) {
+      current = Math.max(0, Math.min(i, steps.length - 1));
+      steps.forEach(function (s, n) { s.hidden = n !== current; });
+      if (stepper) {
+        Array.prototype.forEach.call(stepper.children, function (li, n) {
+          li.classList.toggle("done", n < current);
+          if (n === current) li.setAttribute("aria-current", "step"); else li.removeAttribute("aria-current");
+        });
+      }
+      if (status) status.textContent = "Paso " + (current + 1) + " de " + steps.length;
+      if (focus) {
+        var first = steps[current].querySelector("input:not([type=hidden]), select, textarea");
+        if (first) first.focus();
+      }
+    }
+    function valid(step) {
+      var fields = step.querySelectorAll("input, select, textarea");
+      for (var i = 0; i < fields.length; i++) {
+        if (!fields[i].checkValidity()) { fields[i].reportValidity(); return false; }
+      }
+      return true;
+    }
+    form.addEventListener("click", function (event) {
+      var next = event.target.closest("[data-step-next]");
+      var back = event.target.closest("[data-step-back]");
+      if (next && valid(steps[current])) {
+        show(current + 1, true);
+        history.pushState({ step: current }, "", "#paso-" + (current + 1));
+      } else if (back) {
+        history.back();
+      }
+    });
+    // Enter in a field moves on instead of sending the form before the last step.
+    form.addEventListener("keydown", function (event) {
+      if (event.key !== "Enter" || event.target.tagName === "TEXTAREA" || current === steps.length - 1) return;
+      event.preventDefault();
+      var next = steps[current].querySelector("[data-step-next]");
+      if (next) next.click();
+    });
+    window.addEventListener("popstate", function (event) {
+      var step = event.state && typeof event.state.step === "number" ? event.state.step : 0;
+      show(step, true);
+    });
+    var start = Math.max(1, parseInt(form.getAttribute("data-start") || "1", 10)) - 1;
+    history.replaceState({ step: start }, "", start ? "#paso-" + (start + 1) : location.pathname);
+    show(start, start > 0);
+  });
+
   // Browser notifications for judges (opt-in, needs a click).
   var notifyButton = document.querySelector("[data-enable-notifications]");
   if (notifyButton) {

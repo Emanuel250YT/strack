@@ -1170,6 +1170,7 @@ mod tests {
             state_dir: std::env::temp_dir(),
             intake_token: None,
             ffmpeg: "ffmpeg".into(),
+            allow_private_streams: false,
             accounts_path: std::env::temp_dir().join("accounts.json"),
             platforms_path: std::env::temp_dir().join("platforms.json"),
         }

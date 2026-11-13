@@ -429,6 +429,7 @@ mod tests {
                 name: "Canal Norte TV".into(),
                 watermark_prefix: "LP26-PRA-LIC-NORTE".into(),
                 authorized_domains: vec!["canalnorte.test".into(), "envivo.canalnorte.test".into()],
+                platform: None,
             }],
         }
     }

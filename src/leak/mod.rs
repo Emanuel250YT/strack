@@ -14,6 +14,7 @@ pub mod marker;
 pub mod mjpeg;
 pub mod platforms;
 pub mod raster;
+pub mod read;
 pub mod scene;
 pub mod source;
 pub mod trace;

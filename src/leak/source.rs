@@ -2,8 +2,15 @@
 //! ffmpeg can play (HLS, DASH, MP4, MPEG-TS, WebM, FLV, RTMP) is decoded by ffmpeg into JPEG frames
 //! for the same scanner. ffmpeg only gets network protocols, so an address someone types (or a
 //! playlist it points to) can never make it read local files.
+//!
+//! Internal addresses: every address is checked before it is opened (`readable_target`) and the
+//! reader's HTTP client enforces the same rule while connecting (`reader_client`). ffmpeg resolves
+//! and follows what a playlist lists on its own, so a production deployment also denies private
+//! ranges at the network edge (egress firewall) for the machine that runs Strack.
 
+use std::net::{IpAddr, SocketAddr};
 use std::process::Stdio;
+use std::sync::Arc;
 use std::time::Duration;
 
 use anyhow::{Context, bail};
@@ -94,6 +101,96 @@ pub enum Probe {
 }
 
 /// Looks at an address without reading the stream: its headers, or its scheme for RTMP.
+/// The HTTP client the stream reader uses (probe, page discovery, MJPEG). Unless private addresses
+/// are allowed it applies the public-address rule when connecting, not only before: its resolver
+/// drops every non-public address, so a name that resolves elsewhere later still cannot reach an
+/// internal service, and a redirect is followed only to http(s) on a name or a public address.
+pub fn reader_client(allow_private: bool) -> reqwest::Result<reqwest::Client> {
+    let builder = reqwest::Client::builder().connect_timeout(Duration::from_secs(5)).user_agent("strack");
+    if allow_private {
+        return builder.build();
+    }
+    builder
+        .dns_resolver(Arc::new(PublicOnly))
+        .redirect(reqwest::redirect::Policy::custom(|attempt| {
+            if attempt.previous().len() >= 5 {
+                attempt.error("too many redirects")
+            } else if public_hop(attempt.url()) {
+                attempt.follow()
+            } else {
+                attempt.error("redirect to an address the reader may not open")
+            }
+        }))
+        .build()
+}
+
+/// A redirect target the reader may follow: http(s), not `localhost`, and not a private address
+/// literal (names go through `PublicOnly`).
+fn public_hop(url: &reqwest::Url) -> bool {
+    if !matches!(url.scheme(), "http" | "https") {
+        return false;
+    }
+    let Some(host) = url.host_str().map(|h| h.trim_start_matches('[').trim_end_matches(']')) else {
+        return false;
+    };
+    let lower = host.to_ascii_lowercase();
+    if lower == "localhost" || lower.ends_with(".localhost") {
+        return false;
+    }
+    host.parse::<IpAddr>().map_or(true, crate::leak::platforms::public_ip)
+}
+
+/// Resolver that keeps only public addresses.
+struct PublicOnly;
+
+impl reqwest::dns::Resolve for PublicOnly {
+    fn resolve(&self, name: reqwest::dns::Name) -> reqwest::dns::Resolving {
+        let host = name.as_str().to_string();
+        Box::pin(async move {
+            let addrs: Vec<SocketAddr> = tokio::net::lookup_host((host.as_str(), 0))
+                .await?
+                .filter(|a| crate::leak::platforms::public_ip(a.ip()))
+                .collect();
+            if addrs.is_empty() {
+                return Err("the name has no public address".into());
+            }
+            Ok(Box::new(addrs.into_iter()) as reqwest::dns::Addrs)
+        })
+    }
+}
+
+/// Whether the stream reader may open `url`: http(s) or rtmp(s) only and, unless private addresses
+/// are allowed (local demos), only when every address the host resolves to is public, so an
+/// address given to Strack cannot reach internal services.
+pub async fn readable_target(url: &str, allow_private: bool) -> bool {
+    let Ok(parsed) = reqwest::Url::parse(url) else {
+        return false;
+    };
+    let default_port = match parsed.scheme() {
+        "http" => 80,
+        "https" | "rtmps" => 443,
+        "rtmp" => 1935,
+        _ => return false,
+    };
+    if allow_private {
+        return true;
+    }
+    let Some(host) = parsed.host_str().map(|h| h.trim_start_matches('[').trim_end_matches(']').to_string()) else {
+        return false;
+    };
+    if host.eq_ignore_ascii_case("localhost") || host.to_ascii_lowercase().ends_with(".localhost") {
+        return false;
+    }
+    let port = parsed.port().unwrap_or(default_port);
+    match tokio::net::lookup_host((host.as_str(), port)).await {
+        Ok(addrs) => {
+            let addrs: Vec<_> = addrs.collect();
+            !addrs.is_empty() && addrs.iter().all(|a| crate::leak::platforms::public_ip(a.ip()))
+        }
+        Err(_) => false,
+    }
+}
+
 pub async fn probe(http: &reqwest::Client, url: &str) -> anyhow::Result<Probe> {
     if let Some(StreamFormat::Rtmp) = StreamFormat::from_url(url) {
         return Ok(Probe::Stream(StreamFormat::Rtmp));
@@ -194,7 +291,61 @@ impl FrameSource {
 mod tests {
     use bytes::BytesMut;
 
-    use crate::leak::source::{StreamFormat, take_jpeg};
+    use crate::leak::source::{StreamFormat, public_hop, readable_target, reader_client, take_jpeg};
+
+    #[test]
+    fn redirects_only_go_to_public_hosts() {
+        let ok = |u: &str| public_hop(&reqwest::Url::parse(u).expect("url"));
+        assert!(ok("https://cdn.example.com/live.m3u8"));
+        assert!(ok("http://8.8.8.8/a"));
+        for bad in [
+            "http://127.0.0.1/",
+            "http://10.0.0.1/",
+            "http://[::1]/",
+            "http://localhost/",
+            "file:///etc/passwd",
+            "ftp://8.8.8.8/",
+        ] {
+            assert!(!ok(bad), "{bad} must not be followed");
+        }
+    }
+
+    #[tokio::test]
+    async fn the_reader_client_refuses_internal_hops() {
+        use axum::response::Redirect;
+        let target = tokio::net::TcpListener::bind("127.0.0.1:0").await.expect("bind");
+        let inner = target.local_addr().expect("addr");
+        let app = axum::Router::new().route(
+            "/",
+            axum::routing::get(move || async move { Redirect::temporary(&format!("http://{inner}/secret")) }),
+        );
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.expect("bind");
+        let outer = listener.local_addr().expect("addr");
+        tokio::spawn(async move { axum::serve(listener, app).await });
+        let guarded = reader_client(false).expect("client");
+        assert!(guarded.get(format!("http://{outer}/")).send().await.is_err(), "a redirect to loopback is refused");
+        assert!(guarded.get("http://localhost:9/").send().await.is_err(), "names resolving to loopback are refused");
+        drop(target);
+    }
+
+    #[tokio::test]
+    async fn the_reader_reaches_public_addresses_only_unless_allowed() {
+        for url in [
+            "http://127.0.0.2:8200/",
+            "http://10.1.2.3/live.m3u8",
+            "http://[::1]/",
+            "http://169.254.169.254/",
+            "http://localhost:3000/",
+        ] {
+            assert!(!readable_target(url, false).await, "{url} must be refused");
+        }
+        assert!(readable_target("http://127.0.0.2:8200/", true).await, "local demos may read local streams");
+        assert!(readable_target("https://8.8.8.8/live.m3u8", false).await);
+        assert!(readable_target("rtmp://8.8.8.8/live/key", false).await);
+        for url in ["file:///etc/passwd", "ftp://8.8.8.8/x", "not a url"] {
+            assert!(!readable_target(url, true).await, "{url} is never a stream address");
+        }
+    }
 
     #[test]
     fn formats_from_addresses() {

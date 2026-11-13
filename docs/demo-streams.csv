@@ -1,0 +1,6 @@
+stream_url,marca_de_agua,pagina,ip_servidor
+https://s1.pelotaya.example/hls/en-vivo/index.m3u8,LP26-F12-OFI-S048211,https://pelotaya.example/en-vivo,203.0.113.10
+https://live.golazo-libre.example/hls/en-vivo/index.m3u8,LP26-F12-OFI-S077310,https://golazo-libre.example/partido,198.51.100.20
+https://tv.verpartido-hd.example/live/index.m3u8,LP26-F12-OFI-S101144,https://verpartido-hd.example/,192.0.2.50
+https://envivo.canalnorte.test/hls/index.m3u8,LP26-F12-LIC-NORTE-S1,https://canalnorte.test/vivo,192.0.2.10
+https://vod.resumenes-deportivos.example/vod/index.m3u8,LP26-OTRO-EVT-S9,https://resumenes-deportivos.example/,198.51.100.90

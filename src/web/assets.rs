@@ -19,6 +19,17 @@ pub async fn css() -> impl IntoResponse {
     ([(header::CONTENT_TYPE, "text/css; charset=utf-8"), (header::CACHE_CONTROL, "no-cache")], CSS)
 }
 
+/// The mark as the browser tab icon: white on a coral tile, legible on light and dark tabs.
+pub async fn favicon() -> impl IntoResponse {
+    let svg = format!(
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"-24 -62 315 315\">\
+         <rect x=\"-24\" y=\"-62\" width=\"315\" height=\"315\" rx=\"70\" fill=\"#f0533a\"/>\
+         <g fill=\"#ffffff\">{}</g></svg>",
+        crate::web::layout::BRAND_MARK
+    );
+    ([(header::CONTENT_TYPE, "image/svg+xml"), (header::CACHE_CONTROL, "no-cache")], svg)
+}
+
 pub async fn js() -> impl IntoResponse {
     ([(header::CONTENT_TYPE, "text/javascript; charset=utf-8"), (header::CACHE_CONTROL, "no-cache")], JS)
 }

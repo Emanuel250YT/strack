@@ -7,18 +7,19 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::{Duration, Instant};
 
 use anyhow::{Context, anyhow};
+use axum::body::Body;
 use axum::extract::State;
+use axum::http::header;
 use axum::response::{Html, IntoResponse, Response};
 use axum::routing::get;
 use axum::{Json, Router, middleware};
 use bytes::Bytes;
 use clap::{Args, ValueEnum};
 use image::{Rgb, RgbImage, imageops};
-use maud::{DOCTYPE, html};
+use maud::{DOCTYPE, PreEscaped, html};
 use serde_json::{Value, json};
 use tokio::sync::{mpsc, watch};
 
-use crate::demo::encoder::{self, Input};
 use crate::demo::{clock_time, css, security_headers};
 use crate::leak::jpeg::{decode_rgb, encode};
 use crate::leak::mark::{client_label, parse_client};
@@ -115,6 +116,10 @@ struct Pirate {
     args: PirateArgs,
     accounts: Vec<String>,
     frames: watch::Sender<Option<Bytes>>,
+    /// The licensed stream being relayed now (MJPEG address with its key); the video player relays
+    /// the same session's MP4.
+    source: Mutex<Option<String>>,
+    http: reqwest::Client,
     status: Mutex<Status>,
 }
 
@@ -158,6 +163,8 @@ pub async fn run(args: PirateArgs) -> anyhow::Result<()> {
             history: Vec::new(),
         }),
         accounts,
+        source: Mutex::new(None),
+        http: reqwest::Client::builder().connect_timeout(Duration::from_secs(5)).build()?,
     });
     tokio::spawn(relay(pirate.clone()));
     let app = Router::new()
@@ -206,9 +213,11 @@ async fn relay(p: Arc<Pirate>) {
             Ok(url) => {
                 p.set_status("relaying", Some(account), i + 1);
                 tracing::info!(account, "relaying the licensed stream");
+                *p.source.lock().unwrap_or_else(|e| e.into_inner()) = Some(url.clone());
                 if let Err(e) = pipe(&p, &http, &url).await {
                     tracing::warn!(account, error = %e, "relay interrupted");
                 }
+                *p.source.lock().unwrap_or_else(|e| e.into_inner()) = None;
                 tracing::info!(account, "source lost");
             }
             Err(e) => tracing::warn!(account, error = %e, "could not log in"),
@@ -325,15 +334,16 @@ async fn home(State(p): State<Arc<Pirate>>) -> Html<String> {
                 link rel="stylesheet" href="/static/demo.css";
             }
             body class="pirate" {
-                header class="bar" { div class="wrap" { span class="brand" { (site) } span class="tag" { "Sitio pirata ficticio · demo" } } }
+                header class="bar" { div class="wrap" { span class="brand" { (site) } span class="tag" { "En vivo · HD · gratis" } } }
                 main class="wrap" {
                     h1 { "Fútbol gratis en vivo" }
                     figure class="player" {
-                        video src="/stream.mp4" width="768" height="432" controls autoplay muted playsinline preload="auto"
+                        video src="/stream.mp4" width="768" height="432" controls autoplay playsinline preload="auto"
                             aria-label="Retransmisión pirata del partido (demo)" {
                             "Tu navegador no puede reproducir este video."
                         }
-                        figcaption { "Retransmisión sin sonido: el pirata toma la imagen de la cuenta que usa." }
+                        figcaption { "Partido en vivo. Si se corta, vuelve solo en unos segundos." }
+                        script { (PreEscaped(RECONNECT_JS)) }
                     }
                     section class="backstage" aria-labelledby="backstage-title" {
                         h2 id="backstage-title" { "Detrás de escena (solo para la demo)" }
@@ -437,33 +447,59 @@ async fn history(State(p): State<Arc<Pirate>>) -> Html<String> {
     Html(page.into_string())
 }
 
-/// The restream as real video in a `<video>` player (H.264, no sound), from the same frames Strack reads.
+/// The restream for the page's `<video>` player: the stolen account's own MP4 session (picture and
+/// sound from the platform's encoder, so they stay in sync), relayed as it arrives. When the account
+/// is cut the response ends and the page asks again, getting whatever account is on the air then.
 async fn stream_video(State(p): State<Arc<Pirate>>) -> Response {
-    let (encoder, response) = match encoder::start(&p.args.ffmpeg, (p.args.fps, 1), Input::Jpeg, None) {
-        Ok(started) => started,
-        Err(e) => {
-            tracing::warn!(error = %e, "could not start the video encoder (is ffmpeg installed?)");
-            return axum::http::StatusCode::SERVICE_UNAVAILABLE.into_response();
-        }
+    let source = p.source.lock().unwrap_or_else(|e| e.into_inner()).clone();
+    let Some(url) = source.as_deref().and_then(mp4_of) else {
+        return (axum::http::StatusCode::SERVICE_UNAVAILABLE, "Sin señal").into_response();
     };
-    let frames = p.frames.subscribe();
-    std::thread::spawn(move || {
-        // Waits for the first picture, then repeats the latest one at a constant rate.
-        encoder.run_paced(|| {
-            loop {
-                if let Some(jpeg) = frames.borrow().as_ref() {
-                    return Some(jpeg.to_vec());
-                }
-                std::thread::sleep(Duration::from_millis(100));
-            }
-        });
-    });
-    response
+    match p.http.get(&url).send().await.and_then(reqwest::Response::error_for_status) {
+        Ok(upstream) => (
+            [(header::CONTENT_TYPE, "video/mp4"), (header::CACHE_CONTROL, "no-store")],
+            Body::from_stream(upstream.bytes_stream()),
+        )
+            .into_response(),
+        Err(e) => {
+            tracing::warn!(error = %e, "could not open the licensed MP4 session");
+            (axum::http::StatusCode::SERVICE_UNAVAILABLE, "Sin señal").into_response()
+        }
+    }
+}
+
+/// The page's player asks for the stream again when it ends or fails, like a pirate player does.
+const RECONNECT_JS: &str = "(function(){var v=document.querySelector('video');if(!v)return;var t=null;\
+var base=v.getAttribute('src');function again(){if(t)return;t=setTimeout(function(){t=null;v.src=base+'?t='+Date.now();\
+var p=v.play();if(p&&p.catch)p.catch(function(){});},2500);}\
+v.addEventListener('ended',again);v.addEventListener('error',again);})();";
+
+/// The MP4 address of a licensed session from its MJPEG address (same session, same key).
+fn mp4_of(mjpeg_url: &str) -> Option<String> {
+    let (path, query) = match mjpeg_url.split_once('?') {
+        Some((path, query)) => (path, Some(query)),
+        None => (mjpeg_url, None),
+    };
+    let base = path.strip_suffix(".mjpg")?;
+    Some(match query {
+        Some(q) => format!("{base}.mp4?{q}"),
+        None => format!("{base}.mp4"),
+    })
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::demo::pirate::expand_accounts;
+    use crate::demo::pirate::{expand_accounts, mp4_of};
+
+    #[test]
+    fn the_sound_comes_from_the_same_session() {
+        assert_eq!(
+            mp4_of("http://127.0.0.1:8100/live/s1.mjpg?key=abc").as_deref(),
+            Some("http://127.0.0.1:8100/live/s1.mp4?key=abc")
+        );
+        assert_eq!(mp4_of("http://h/live/s1.mjpg").as_deref(), Some("http://h/live/s1.mp4"));
+        assert_eq!(mp4_of("http://h/live/s1.jpg"), None);
+    }
 
     #[test]
     fn expands_account_ranges() {

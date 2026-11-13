@@ -178,6 +178,13 @@ pub fn message(code: &str) -> Option<(&'static str, &'static str)> {
         "nothing_to_do" => ("No hay nada para firmar.", "warn"),
         "trace_started" => ("Rastreo iniciado: se está leyendo el stream.", "ok"),
         "trace_stopping" => ("Deteniendo el rastreo.", "ok"),
+        "api_url_not_public" => (
+            "Esa dirección no es pública (local, privada o interna). Para usarla, pedile el cambio a la administración de Strack.",
+            "warn",
+        ),
+        "address_not_allowed" => {
+            ("Esa dirección es local, privada o interna: Strack solo lee streams de internet.", "warn")
+        }
         "no_video_in_page" => {
             ("Esa página no tiene un video que podamos leer (ni en reproductores embebidos).", "warn")
         }
@@ -366,7 +373,8 @@ pub fn intake_error(code: &str) -> &'static str {
         "too_many" => "Se cargan hasta 200 streams por vez: el resto quedó afuera.",
         "unreadable_json" => "El JSON no se puede leer.",
         "empty" => "No hay nada para cargar.",
-        "server_unknown" => "No hay registros del servidor en el DNS pasivo: indicá su IP.",
+        "server_unknown" => "No se pudo saber qué servidor entrega el stream: indicá su IP.",
+        "address_not_allowed" => "La dirección es local, privada o interna: Strack solo lee streams de internet.",
         "dns_unavailable" => "No se pudo consultar el DNS pasivo. Probá de nuevo en un momento.",
         "match_not_ready" => "El partido todavía no está conectado.",
         _ => "No se pudo cargar.",

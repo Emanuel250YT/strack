@@ -2,7 +2,9 @@
 //! intake API (`POST /api/detections`) for monitoring tools. Both feed `engine::ingest`, the same
 //! path as the live feed.
 
+use std::net::IpAddr;
 use std::sync::Arc;
+use std::time::Duration;
 
 use axum::Form;
 use axum::Json;
@@ -10,15 +12,17 @@ use axum::body::Bytes;
 use axum::extract::{Query, State};
 use axum::http::{HeaderMap, StatusCode, header};
 use axum::response::{Html, IntoResponse, Redirect, Response};
+use base64::Engine;
 use maud::{Markup, html};
 use serde::Deserialize;
 use serde_json::{Value, json};
 
 use crate::app::{App, MatchRun};
-use crate::crypto::constant_time_eq;
+use crate::crypto::{constant_time_eq, sha256_hex};
 use crate::engine::ingest;
 use crate::intake::{self, Item, ItemError, MAX_ITEMS, ORIGIN_API, ORIGIN_MANUAL, Parsed};
 use crate::judges::{Role, Session};
+use crate::leak::read::{MarkReading, read_mark};
 use crate::leak::trace::{self, TraceStatus};
 use crate::model::CaseStatus;
 use crate::web::labels;
@@ -27,7 +31,7 @@ use crate::web::ops::MatchQuery;
 use crate::web::ui::page_header;
 use crate::web::views::status;
 use crate::web::{csrf_ok, current_session, error_page};
-use crate::workflow::Ingest;
+use crate::workflow::{Ingest, url_host};
 
 const EXAMPLE: &str = "https://s1.pelotaya.test/hls/en-vivo/index.m3u8, LP26-PRA-OFI-S048211\n\
                        https://live.golazo-libre.test/hls/en-vivo/index.m3u8, LP26-PRA-OFI-S077310, https://golazo-libre.test/partido";
@@ -71,11 +75,17 @@ async fn start_traces(app: &Arc<App>, results: &[(Item, Loaded)], actor: &str) -
     out
 }
 
+/// How long Strack reads a loaded stream for a licensed platform's mark before it opens the case
+/// without one.
+const READ_LIMIT: Duration = Duration::from_secs(45);
+
 /// What happened to one loaded stream.
 enum Loaded {
     Created(String),
     Attached(String),
     Duplicate,
+    /// No watermark was given: Strack is reading it from the stream and opens the case when done.
+    Reading,
     Failed(&'static str),
 }
 
@@ -95,12 +105,13 @@ fn loader_session(app: &App, headers: &HeaderMap) -> Result<Session, Response> {
     Ok(session)
 }
 
-/// Resolves each stream's server (passive DNS when no IP was given) and ingests it into `m`.
+/// Ingests each stream into `m`. A stream given without a watermark is read first, in the
+/// background (`read_then_load`): its case opens once Strack has looked for the mark.
 async fn load(
     app: &Arc<App>,
     m: &Arc<MatchRun>,
     items: Vec<Item>,
-    origin: &str,
+    origin: &'static str,
     by: Option<&str>,
 ) -> Vec<(Item, Loaded)> {
     let mut out = Vec::with_capacity(items.len());
@@ -109,39 +120,156 @@ async fn load(
             out.push((item, Loaded::Failed("match_not_ready")));
             continue;
         }
-        let ip = match &item.ip {
-            Some(ip) => Some(ip.clone()),
-            None => match m.sim.dns_by_domain(&item.host).await {
-                Ok(found) => found.and_then(|d| d.ips.first().map(|i| i.ip.clone())),
-                Err(_) => {
-                    out.push((item, Loaded::Failed("dns_unavailable")));
-                    continue;
-                }
-            },
-        };
-        let Some(ip) = ip else {
-            out.push((item, Loaded::Failed("server_unknown")));
+        if item.watermark.is_none() {
+            if !crate::leak::source::readable_target(&item.stream_url, app.settings.allow_private_streams).await {
+                out.push((item, Loaded::Failed("address_not_allowed")));
+                continue;
+            }
+            tokio::spawn(read_then_load(app.clone(), m.clone(), item.clone(), origin, by.map(str::to_string)));
+            out.push((item, Loaded::Reading));
             continue;
-        };
-        let (id, minute) = {
-            let mut core = m.core();
-            core.store.intake_seq += 1;
-            core.store.dirty = true;
-            (format!("M-{:04}", core.store.intake_seq), core.now())
-        };
-        let raw = intake::detection(&item, &id, minute, &ip, origin, by);
-        let actor = crate::workflow::detection_actor(&raw);
-        let loaded = match ingest(app, m, raw, &actor).await {
-            Ok(Some(Ingest::Created(case))) => Loaded::Created(case),
-            Ok(Some(Ingest::Attached(case))) => Loaded::Attached(case),
-            Ok(Some(Ingest::Duplicate)) => Loaded::Duplicate,
-            Ok(None) => Loaded::Failed("invalid_stream_url"),
-            Err(_) => Loaded::Failed("dns_unavailable"),
-        };
+        }
+        let loaded = load_one(app, m, item.clone(), origin, by).await;
         out.push((item, loaded));
     }
     m.persist();
     out
+}
+
+/// The stream server's IP: the host itself when it is an address, else passive DNS, else what the
+/// resolver answers.
+async fn server_ip(m: &MatchRun, host: &str) -> Result<Option<String>, &'static str> {
+    if host.parse::<IpAddr>().is_ok() {
+        return Ok(Some(host.to_string()));
+    }
+    match m.sim.dns_by_domain(host).await {
+        Ok(Some(found)) => {
+            if let Some(ip) = found.ips.first() {
+                return Ok(Some(ip.ip.clone()));
+            }
+        }
+        Ok(None) => {}
+        Err(_) => return Err("dns_unavailable"),
+    }
+    let resolved = tokio::time::timeout(Duration::from_secs(5), tokio::net::lookup_host((host, 80))).await;
+    Ok(resolved.ok().and_then(Result::ok).and_then(|mut addrs| addrs.find(|a| a.is_ipv4())).map(|a| a.ip().to_string()))
+}
+
+/// Resolves one stream's server and ingests it into `m`.
+async fn load_one(app: &Arc<App>, m: &Arc<MatchRun>, item: Item, origin: &str, by: Option<&str>) -> Loaded {
+    let ip = match &item.ip {
+        Some(ip) => Some(ip.clone()),
+        None => match server_ip(m, &item.host).await {
+            Ok(ip) => ip,
+            Err(code) => return Loaded::Failed(code),
+        },
+    };
+    let Some(ip) = ip else {
+        return Loaded::Failed("server_unknown");
+    };
+    let (id, minute) = {
+        let mut core = m.core();
+        core.store.intake_seq += 1;
+        core.store.dirty = true;
+        (format!("M-{:04}", core.store.intake_seq), core.now())
+    };
+    let raw = intake::detection(&item, &id, minute, &ip, origin, by);
+    let actor = crate::workflow::detection_actor(&raw);
+    match ingest(app, m, raw, &actor).await {
+        Ok(Some(Ingest::Created(case))) => Loaded::Created(case),
+        Ok(Some(Ingest::Attached(case))) => Loaded::Attached(case),
+        Ok(Some(Ingest::Duplicate)) => Loaded::Duplicate,
+        Ok(None) => Loaded::Failed("invalid_stream_url"),
+        Err(_) => Loaded::Failed("dns_unavailable"),
+    }
+}
+
+/// Reads a stream loaded without a watermark for a licensed platform's session mark, turns what it
+/// finds into the case's watermark and capture evidence, and then ingests it. Nothing is sent to the
+/// platform here: tracing the account is a separate, explicit choice ("Rastrear").
+async fn read_then_load(app: Arc<App>, m: Arc<MatchRun>, mut item: Item, origin: &'static str, by: Option<String>) {
+    let actor = by.clone().unwrap_or_else(|| origin.to_string());
+    match read_mark(&app, &item.stream_url, READ_LIMIT).await {
+        Ok(Some(reading)) => apply_reading(&app, &m, &mut item, reading, &actor),
+        Ok(None) => {
+            m.core().record(&actor, "intake_mark_not_found", json!({ "stream_url": item.stream_url }));
+        }
+        Err(e) => {
+            tracing::warn!(error = %e, url = %item.stream_url, "could not read a loaded stream");
+            m.core().record(&actor, "intake_stream_unreadable", json!({ "stream_url": item.stream_url }));
+        }
+    }
+    let stream_url = item.stream_url.clone();
+    let loaded = load_one(&app, &m, item, origin, by.as_deref()).await;
+    let (result, case_id) = match &loaded {
+        Loaded::Created(id) => ("created", Some(id.clone())),
+        Loaded::Attached(id) => ("attached", Some(id.clone())),
+        Loaded::Duplicate => ("duplicate", None),
+        Loaded::Reading => ("reading", None),
+        Loaded::Failed(code) => (*code, None),
+    };
+    m.core().record(
+        &actor,
+        "intake_read_loaded",
+        json!({ "stream_url": stream_url, "result": result, "case_id": case_id }),
+    );
+    m.persist();
+    app.persist();
+}
+
+/// The watermark a reading proves: the prefix of the match's licensee whose platform put the mark
+/// there plus the session, or the mark itself when no licensee of this match uses that platform
+/// (then it is not this match's signal and the case cannot be approved).
+fn apply_reading(app: &App, m: &MatchRun, item: &mut Item, reading: MarkReading, actor: &str) {
+    let platform = app.platforms().find_by_code(reading.mark.platform).map(|p| p.id.clone());
+    let (licensee, minute) = {
+        let core = m.core();
+        let licensee = core
+            .store
+            .match_info
+            .as_ref()
+            .and_then(|info| info.licensees.iter().find(|l| platform.is_some() && l.platform == platform).cloned());
+        (licensee, (core.now() * 1000.0).round() / 1000.0)
+    };
+    let watermark = match &licensee {
+        Some(l) => format!("{}-S{}", l.watermark_prefix, reading.mark.session_hex().to_uppercase()),
+        None => reading.mark.text(),
+    };
+    if reading.stream_url != item.stream_url {
+        if let Some(host) = url_host(&reading.stream_url) {
+            item.host = host;
+        }
+        item.page = item.page.take().or(reading.page_url.clone());
+        item.stream_url = reading.stream_url.clone();
+    }
+    let frame_sha256 = sha256_hex(&reading.frame);
+    item.watermark = Some(watermark.clone());
+    item.extra.insert(
+        "captura".into(),
+        json!({
+            "capturada_min": minute,
+            "formato": "jpeg",
+            "duracion_seg": 0,
+            "contenido_b64": base64::engine::general_purpose::STANDARD.encode(&reading.frame),
+        }),
+    );
+    item.extra.insert(
+        "marca_leida".into(),
+        json!({ "marca": reading.mark.text(), "plataforma": platform, "formato": reading.format.label() }),
+    );
+    m.core().record(
+        actor,
+        "intake_mark_read",
+        json!({
+            "stream_url": item.stream_url,
+            "page_url": reading.page_url,
+            "platform": platform,
+            "licensee": licensee.map(|l| l.name),
+            "mark": reading.mark.text(),
+            "watermark": watermark,
+            "frame_sha256": frame_sha256,
+        }),
+    );
 }
 
 fn form_markup(app: &App, session: &Session, current: &str, text: &str, errors: &[(usize, ItemError)]) -> Markup {
@@ -240,6 +368,10 @@ fn result_row(m: &MatchRun, item: &Item, loaded: &Loaded, trace_id: Option<&str>
                     }
                     Loaded::Attached(_) => { (status(labels::Label { text: "Ya tenía expediente: se sumó", tone: "tone-info" })) }
                     Loaded::Duplicate => { (status(labels::Label { text: "Ya estaba cargado", tone: "tone-muted" })) }
+                    Loaded::Reading => {
+                        (status(labels::Label { text: "Leyendo la marca de agua del stream", tone: "tone-info" }))
+                        br; span class="hint" { "El expediente aparece en Operaciones en cuanto termina la lectura (menos de un minuto)." }
+                    }
                     Loaded::Failed(code) if trace_id.is_some() => {
                         (status(labels::Label { text: "Se rastrea la cuenta de origen", tone: "tone-info" }))
                         br; span class="hint" { "Sin expediente de bloqueo: " (labels::intake_error(code).to_lowercase()) }
@@ -289,6 +421,7 @@ pub async fn intake_submit(State(app): State<Arc<App>>, headers: HeaderMap, Form
     let created = results.iter().filter(|(_, l)| matches!(l, Loaded::Created(_))).count();
     let attached = results.iter().filter(|(_, l)| matches!(l, Loaded::Attached(_))).count();
     let failed = results.iter().filter(|(_, l)| matches!(l, Loaded::Failed(_))).count() + errors.len();
+    let reading = results.iter().filter(|(_, l)| matches!(l, Loaded::Reading)).count();
     let label = m.label();
     let body = html! {
         (page_header(
@@ -303,6 +436,7 @@ pub async fn intake_submit(State(app): State<Arc<App>>, headers: HeaderMap, Form
         dl class="kpis" {
             div class="kpi" { dt { "Expedientes nuevos" } dd { (created) } }
             div class="kpi" { dt { "Se sumaron a uno existente" } dd { (attached) } }
+            @if reading > 0 { div class="kpi" { dt { "Leyendo la marca" } dd { (reading) } } }
             div class="kpi" { dt { "Con problemas" } dd { (failed) } }
         }
         @if !errors.is_empty() {
@@ -384,6 +518,7 @@ pub async fn intake_api(
                 Loaded::Created(id) => ("created", Some(id.as_str()), None),
                 Loaded::Attached(id) => ("attached", Some(id.as_str()), None),
                 Loaded::Duplicate => ("duplicate", None, None),
+                Loaded::Reading => ("reading", None, None),
                 Loaded::Failed(code) => ("failed", None, Some(*code)),
             };
             json!({ "index": item.line, "stream_url": item.stream_url, "result": state, "case_id": case, "error": error,

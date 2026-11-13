@@ -179,6 +179,7 @@ pub async fn start(State(app): State<Arc<App>>, headers: HeaderMap, Form(form): 
     match trace::start_from(&app, url, case_id, &session.username).await {
         Ok(ids) if ids.len() == 1 => Redirect::to(&format!("/ops/traces/{}?msg=trace_started", ids[0])).into_response(),
         Ok(_) => Redirect::to("/ops/traces?msg=traces_started_from_page").into_response(),
+        Err(trace::StartError::NotAllowed) => Redirect::to("/ops/traces?error=address_not_allowed").into_response(),
         Err(_) => Redirect::to("/ops/traces?error=no_video_in_page").into_response(),
     }
 }

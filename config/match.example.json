@@ -7,13 +7,20 @@
     "fin_min": 105,
     "marcas_de_agua_validas": [
       { "prefijo": "LP26-F12-OFI", "origen": "Señal oficial del titular (plataforma propia)" },
-      { "prefijo": "LP26-F12-LIC-NORTE", "origen": "Licenciatario autorizado: Canal Norte TV (ficticio)" }
+      { "prefijo": "LP26-F12-LIC-NORTE", "origen": "Licenciatario autorizado: Canal Norte TV (ficticio)" },
+      { "prefijo": "LP26-F12-LIC-TVF", "origen": "Licenciatario autorizado: TV Ficticia Play (plataforma de streaming)" }
     ],
     "licenciatarios": [
       {
         "nombre": "Canal Norte TV (ficticio)",
         "prefijo_marca": "LP26-F12-LIC-NORTE",
         "dominios_autorizados": ["canalnorte.test", "envivo.canalnorte.test"]
+      },
+      {
+        "nombre": "TV Ficticia Play",
+        "prefijo_marca": "LP26-F12-LIC-TVF",
+        "dominios_autorizados": ["127.0.0.1", "localhost"],
+        "plataforma": "tvf"
       }
     ]
   },

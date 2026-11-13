@@ -85,6 +85,7 @@ pub async fn login_submit(State(app): State<Arc<App>>, Form(form): Form<LoginFor
         return fail("Demasiados intentos fallidos. Espere 30 segundos y vuelva a intentar.");
     }
     let account = app.accounts().find(&username).cloned();
+    let known = account.as_ref().map(|a| a.username.clone());
     let password = form.password;
     let outcome = tokio::task::spawn_blocking(move || match account {
         Some(account) => authenticate(&account, &password).map(|key| (account, key)),
@@ -98,7 +99,13 @@ pub async fn login_submit(State(app): State<Arc<App>>, Form(form): Form<LoginFor
     .flatten();
     let Some((account, key)) = outcome else {
         app.sessions().record_failure(&username);
-        app.core().record("system", "login_failed", json!({"username": username}));
+        // Only an existing account is named: what someone typed in the username box (sometimes a
+        // password) never reaches the audit log.
+        let data = match &known {
+            Some(name) => json!({"username": name}),
+            None => json!({"unknown_account": true}),
+        };
+        app.core().record("system", "login_failed", data);
         return fail("Usuario o contraseña incorrectos.");
     };
     let session = {

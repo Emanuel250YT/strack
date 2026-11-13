@@ -103,6 +103,12 @@ fn kill(child: &Arc<Mutex<Child>>) {
     }
 }
 
+/// `STRACK_H264_ENCODER=h264_nvenc` moves the H.264 encoding to an NVIDIA GPU (the demo script sets it
+/// when ffmpeg has NVENC and the machine an NVIDIA card); libx264 on the CPU otherwise.
+fn gpu_encoder() -> bool {
+    std::env::var("STRACK_H264_ENCODER").is_ok_and(|v| v == "h264_nvenc")
+}
+
 /// Starts ffmpeg and returns the frame writer plus the HTTP response that streams the video.
 pub fn start(
     ffmpeg: &str,
@@ -128,9 +134,16 @@ pub fn start(
         cmd.args(["-re", "-ss", &format!("{:.3}", audio.position.max(0.0)), "-i"]).arg(&audio.file);
         cmd.args(["-map", "0:v", "-map", "1:a?", "-c:a", "aac", "-b:a", "160k", "-ac", "2"]);
     }
-    cmd.args(["-c:v", "libx264", "-preset", "veryfast", "-tune", "zerolatency", "-pix_fmt", "yuv420p"]);
-    cmd.args(["-profile:v", "high", "-crf", "18", "-maxrate", "8M", "-bufsize", "8M"]);
-    cmd.args(["-g", &gop, "-keyint_min", &gop, "-sc_threshold", "0"]);
+    if gpu_encoder() {
+        // NVENC, low-latency tuning and no B-frames, like x264's zerolatency below.
+        cmd.args(["-c:v", "h264_nvenc", "-preset", "p2", "-tune", "ll", "-rc", "vbr", "-cq", "21", "-b:v", "0"]);
+        cmd.args(["-maxrate", "8M", "-bufsize", "8M", "-bf", "0", "-pix_fmt", "yuv420p", "-profile:v", "high"]);
+        cmd.args(["-g", &gop, "-keyint_min", &gop]);
+    } else {
+        cmd.args(["-c:v", "libx264", "-preset", "veryfast", "-tune", "zerolatency", "-pix_fmt", "yuv420p"]);
+        cmd.args(["-profile:v", "high", "-crf", "18", "-maxrate", "8M", "-bufsize", "8M"]);
+        cmd.args(["-g", &gop, "-keyint_min", &gop, "-sc_threshold", "0"]);
+    }
     cmd.args(["-movflags", "frag_keyframe+empty_moov+default_base_moof", "-f", "mp4", "pipe:1"]);
     let mut child = cmd.stdin(Stdio::piped()).stdout(Stdio::piped()).stderr(Stdio::inherit()).spawn()?;
     let stdin = child.stdin.take().ok_or_else(|| std::io::Error::other("no stdin"))?;

@@ -16,7 +16,7 @@ use crate::leak::discover;
 use crate::leak::extract::{Found, MarkSource, Scanner};
 use crate::leak::mark::{SessionMark, platform_code};
 use crate::leak::platforms::{NoticeAck, NoticeError, NoticeRequest, PlatformEntry, send_notice};
-use crate::leak::source::{FrameSource, Probe, probe};
+use crate::leak::source::{FrameSource, Probe, probe, readable_target};
 use crate::leak::watermark::PERIOD_SECS;
 use crate::workflow::now_rfc3339;
 
@@ -153,6 +153,8 @@ pub fn frames_dir(app: &App, trace_id: &str) -> PathBuf {
 pub enum StartError {
     /// The address is a page with no video we can read in it.
     NoVideoInPage,
+    /// The address is local, private or internal (see `source::readable_target`).
+    NotAllowed,
 }
 
 /// Starts tracing whatever `url` holds: a stream of any format is traced as it is; a pirate page is
@@ -164,8 +166,18 @@ pub async fn start_from(
     case_id: Option<String>,
     actor: &str,
 ) -> Result<Vec<String>, StartError> {
+    let allow_private = app.settings.allow_private_streams;
+    if !readable_target(&url, allow_private).await {
+        app.core().record(actor, "trace_address_not_allowed", json!({"url": url, "case_id": case_id}));
+        return Err(StartError::NotAllowed);
+    }
     if let Ok(Probe::Page) = probe(&app.http, &url).await {
-        let found = discover::discover(&app.http, &url).await.unwrap_or_default();
+        let mut found = Vec::new();
+        for c in discover::discover(&app.http, &url, allow_private).await.unwrap_or_default() {
+            if readable_target(&c.url, allow_private).await {
+                found.push(c);
+            }
+        }
         if found.is_empty() {
             app.core().record(actor, "trace_page_without_video", json!({"page_url": url, "case_id": case_id}));
             return Err(StartError::NoVideoInPage);
@@ -369,6 +381,10 @@ impl Tracer {
 
     /// Connects to the stream, natively for MJPEG and JPEG and through ffmpeg for everything else.
     async fn connect(&mut self) -> anyhow::Result<FrameSource> {
+        // Checked on every connection: the name may resolve elsewhere since the trace started.
+        if !readable_target(&self.url, self.app.settings.allow_private_streams).await {
+            anyhow::bail!("address not allowed");
+        }
         let format = match probe(&self.app.http, &self.url).await? {
             Probe::Stream(format) => format,
             Probe::Page => anyhow::bail!("the address is a web page, not a stream"),
@@ -580,7 +596,7 @@ impl Tracer {
                 "leak_notice_sent",
                 json!({"trace_id": self.id, "leak": n, "notice_id": request.notice_id, "platform": platform.id, "attempt": attempt}),
             );
-            match send_notice(&self.app.http, platform, request).await {
+            match send_notice(platform, request).await {
                 Ok(ack) => {
                     let elapsed = self.seen.get(&key).map(|s| s.first.elapsed().as_secs_f64());
                     if let Some(seen) = self.seen.get_mut(&key) {

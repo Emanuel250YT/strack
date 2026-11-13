@@ -43,6 +43,10 @@ pub struct Licensee {
     pub watermark_prefix: String,
     #[serde(rename = "dominios_autorizados", default)]
     pub authorized_domains: Vec<String>,
+    /// Licensed platform (id in Strack's platform registry) whose session marks are this licensee's
+    /// broadcast: a stream carrying one of its marks gets this licensee's watermark.
+    #[serde(rename = "plataforma", default, skip_serializing_if = "Option::is_none")]
+    pub platform: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

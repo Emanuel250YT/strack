@@ -51,10 +51,11 @@ const ICON_USERS: &str = r#"<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 
 const ICON_PLATFORMS: &str =
     r#"<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/><path d="m10 8 4 2-4 2z"/>"#;
 const ICON_LOGOUT: &str = r#"<path d="M10 4H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h4"/><path d="m15 16 4-4-4-4M19 12H9"/>"#;
-/// Brand mark: a stream (play symbol) inside a viewfinder, the stream Strack locks onto.
 const ICON_MOON: &str = r#"<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5Z"/>"#;
 const ICON_SUN: &str = r#"<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>"#;
-const ICON_BRAND: &str = r#"<path d="M4 9V5.5A1.5 1.5 0 0 1 5.5 4H9M15 4h3.5A1.5 1.5 0 0 1 20 5.5V9M20 15v3.5a1.5 1.5 0 0 1-1.5 1.5H15M9 20H5.5A1.5 1.5 0 0 1 4 18.5V15"/><path d="m10 8.5 5.5 3.5-5.5 3.5z"/>"#;
+/// The Strack mark: two chevrons that interlock into an S, one the other turned half a turn. Drawn
+/// in `currentColor`; `assets::favicon` serves the same shape.
+pub const BRAND_MARK: &str = r#"<path d="M102.9 0H260L207 45H102.9L66.2 70L141.2 121H75L9 76.1Q0 70 9 63.9Z"/><path d="M102.9 0H260L207 45H102.9L66.2 70L141.2 121H75L9 76.1Q0 70 9 63.9Z" transform="rotate(180 133.5 95)"/>"#;
 
 fn nav_item(href: &str, label: &str, paths: &'static str, active: Nav, item: Nav) -> Markup {
     html! {
@@ -95,6 +96,7 @@ fn head(title: &str) -> Markup {
             meta name="viewport" content="width=device-width, initial-scale=1";
             meta name="color-scheme" content="light dark";
             title { (title) " · Strack" }
+            link rel="icon" href="/favicon.svg" type="image/svg+xml";
             link rel="stylesheet" href="/static/app.css";
             script src="/static/app.js" defer {}
         }
@@ -104,8 +106,8 @@ fn head(title: &str) -> Markup {
 fn brand() -> Markup {
     html! {
         a class="brand" href="/" {
-            span class="brand-mark" { (icon(ICON_BRAND)) }
-            span class="brand-word" { "Strack" }
+            svg class="brand-mark" viewBox="0 0 267 190" aria-hidden="true" focusable="false" { (PreEscaped(BRAND_MARK)) }
+            span class="brand-word" { "strack" }
         }
     }
 }
@@ -289,8 +291,10 @@ pub fn auth_page(title: &str, body: Markup) -> Markup {
                         p class="auth-foot" { (env_tag()) }
                     }
                     main id="main" class="auth-main" tabindex="-1" {
-                        div class="auth-card" { (body) }
-                        p class="auth-back" { a href="/" { "Ver los bloqueos públicos" } }
+                        div class="auth-card" {
+                            div class="auth-body" { (body) }
+                            p class="auth-back" { a href="/" { "Ver los bloqueos públicos" } }
+                        }
                     }
                 }
             }

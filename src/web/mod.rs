@@ -97,6 +97,7 @@ pub fn router(app: Arc<App>) -> Router {
         .route("/api/audit", get(ops::audit_jsonl))
         .route("/static/app.css", get(assets::css))
         .route("/static/app.js", get(assets::js))
+        .route("/favicon.svg", get(assets::favicon))
         .route("/static/fonts/{file}", get(assets::font))
         .fallback(not_found)
         .layer(middleware::from_fn_with_state(app.clone(), client_scope))

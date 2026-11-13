@@ -32,8 +32,8 @@ Single Rust crate (`edition = 2024`), binary `strack` with subcommands `serve`, 
 | `app.rs` | `App` (settings, accounts, sessions, desk) and one `MatchRun` per `--simulator`: its `SimClient`, `Core`, dispatcher `Notify` and state folder (`match_state_dir`: the first match uses `--state-dir`, match n `match-<n>/`). `App::core()` is the first match, which also holds platform-wide records (sign-ins, admin, leak traces). |
 | `engine.rs` | Async loops per match: bootstrap, poller (status, detections, orders, claims) and dispatcher (parallel POSTs). `engine::ingest` is the one path from a detection to a case (feed, intake form, intake API). |
 | `standalone.rs` | Matches without the simulator: `StandaloneConfig` (match, courts and shifts, providers with `api_url`, optional passive DNS) and `MatchSource` (`Simulator` or `Standalone`), the one interface the engine uses (`MatchRun.sim`). Standalone: wall clock from kick-off, no detection or claims feed (intake only), orders to each provider's API in the simulator's wire format. Unit-tested. |
-| `provider.rs` | `strack provider`: reference order receiver for a provider (orders on disk, status, lift, expiry at `vence_min`, `--hook` per action). |
-| `intake.rs` | Streams loaded by hand or by monitoring tools: parses text/CSV/JSON into items (unit-tested) and builds the feed-format detection, which records `origen` and `cargado_por`. |
+| `provider.rs` | `strack provider`: reference order receiver for a provider (orders on disk, status, lift, expiry at `vence_min`, `--hook` per action). `--gateway <addr>` also runs the provider's network edge: an HTTP proxy for its subscribers that enforces the applied orders itself (451 block page with `--name`; a response already streaming is cut as soon as an order covers its host or IP). Unit-tested matching. |
+| `intake.rs` | Streams loaded by hand or by monitoring tools: parses text/CSV/JSON into items (unit-tested) and builds the feed-format detection, which records `origen` and `cargado_por`. A stream loaded without a watermark is read first (`web/intake.rs` `read_then_load`, `leak::read`): a session mark of a registered platform that is a licensee's `plataforma` becomes `<prefijo_marca>-S<session>`, the frame becomes the `captura` and `marca_leida` keeps the raw mark; no notice is sent unless "Rastrear" is ticked. The server IP is the host when it is an address, else passive DNS, else the system resolver. |
 | `judges.rs` | Accounts, Argon2id passwords, sealed signing keys (Argon2id + ChaCha20-Poly1305), sessions, shifts. |
 | `audit.rs` | Append-only, hash-chained JSONL log and its verifier. |
 | `crypto.rs` | SHA-256, HMAC (simulator demo signatures), canonical JSON. |
@@ -41,7 +41,7 @@ Single Rust crate (`edition = 2024`), binary `strack` with subcommands `serve`, 
 | `admin.rs` | Account and platform-registry management: validation and guards (no self-action, never zero enabled admins, a judge's role is fixed to their sealed key). Unit-tested. |
 | `access.rs` | Getting in without an account or a password: access requests (saved in the state dir), recovery requests and one-time password links (hashed, memory only, 30 min, one use). Nothing is mailed: the admin hands the link over. Unit-tested. |
 | `web/` | axum + maud server-rendered UI: public registry, login, access and recovery requests and the one-time link page (`recovery.rs`), judge panel, operations board, leak tracing, reference pages (`reference.rs`), stream intake (`intake.rs`), the licensed platforms' portal (`platform.rs`), administration (`admin.rs`), own account (`account.rs`), shared parts (`ui.rs`: page header, figure tiles, dialogs, pager), JSON APIs. |
-| `leak/` | Leak tracing (our extra): `source.rs` (frames from MJPEG/JPEG natively or from HLS, DASH, MP4, TS, WebM, RTMP through ffmpeg, network protocols only), `discover.rs` (finds the streams in a pirate page and its iframes), `marker.rs` (`strack mark` and reading marks from video files), `mark.rs` (`STK2` session mark: platform code, subscriber, 32-bit session, CRC-32; 120 bits), `watermark.rs` (invisible watermark: embed and detector), `raster.rs` + `scene.rs` (synthetic broadcast and optional visible QR), `jpeg.rs` (COM segment), `mjpeg.rs` (multipart writer/reader), `extract.rs` (QR + metadata), `platforms.rs` (registry and notice client), `trace.rs` (trace model and runner). |
+| `leak/` | Leak tracing (our extra): `source.rs` (frames from MJPEG/JPEG natively or from HLS, DASH, MP4, TS, WebM, RTMP through ffmpeg, network protocols only), `discover.rs` (finds the streams in a pirate page and its iframes), `read.rs` (one-off mark reading for intake: no record, no notice), `marker.rs` (`strack mark` and reading marks from video files), `mark.rs` (`STK2` session mark: platform code, subscriber, 32-bit session, CRC-32; 120 bits), `watermark.rs` (invisible watermark: embed and detector), `raster.rs` + `scene.rs` (synthetic broadcast and optional visible QR), `jpeg.rs` (COM segment), `mjpeg.rs` (multipart writer/reader), `extract.rs` (QR + metadata), `platforms.rs` (registry and notice client), `trace.rs` (trace model and runner). |
 | `demo/` | Demo licensed platform and pirate restream servers (`strack demo platform`, `strack demo pirate`); `video.rs` feeds real footage through ffmpeg (`--video`: native size and rate, every frame, on the wall clock, ends with the file unless `--loop`), `encoder.rs` turns a session into live H.264 fMP4 for a `<video>` player. Subscriber accounts live in `accounts.rs` (directory saved to `--data`, browser sessions, one-time links, the demo mailbox that stands in for email), the subscriber side in `site.rs` (sign-up, sign-in, recovery, "Mi cuenta", player) and the staff console in `staff.rs` (subscriber CRUD). Not part of the challenge circuit. |
 
 Locking: each `MatchRun.core` (store + audit + clock), `App.sessions` and `App.desk` (access requests
@@ -90,6 +90,9 @@ tasks and lock `core` briefly per frame; frame decoding and QR detection run in 
   sans stack (Inter / Segoe UI), IBM Plex Mono self-hosted for numbers and ids. Light and dark tokens;
   the theme follows the system until the person picks one with the top-bar switch (`data-theme` on
   `<html>`, kept in `localStorage`).
+- Brand: `layout::BRAND_MARK` is the Strack mark (two chevrons interlocking into an S, the second
+  one turned half a turn, `viewBox 0 0 267 190`) drawn in `currentColor` next to the lowercase
+  wordmark "strack" (800 weight); `/favicon.svg` serves it white on a coral tile.
 - Type: uppercase only for sidebar section headings and the eyebrow; labels 13px at 500 in
   `--muted`, body 15px, figures (`--t-stat`) 26px.
 - Three shells in `web/layout.rs`: `page` gives people signed in the app shell (sidebar sections,
@@ -134,6 +137,14 @@ UI: with the demo running (`scripts/demo.ps1`) and a headless Chrome on port 933
 checks 10 pages at 390 and 1366 px in both themes: no horizontal overflow, no text below AA contrast
 (`--selftest` proves the contrast check fires). Screenshots land in `var/ui-audit/shots/`.
 
+Live demo (nothing scripted): `scripts/demo.ps1 -Live [-Video <local file> -Audio <file> -VideoStart <s>]`
+runs the standalone match on the wall clock (kick-off `-VideoStart` seconds ago so the clock follows the
+recording), the pirate on its own loopback address `127.0.0.2:8200`, the four receivers with Aurora's
+network edge on `127.0.0.1:9180`, and a Chrome window (profile `var/demo/viewer`) of an Aurora
+subscriber watching the pirate through it. As `fiscalia` load `http://127.0.0.2:8200/`: the case opens
+within seconds with the TV Ficticia Play licensee watermark; once a judge approves, the viewer's stream
+stops and a reload shows the 451 block page; loading again with "Rastrear" suspends the accounts.
+
 Leak tracing: `strack demo platform`, `strack demo pirate`, `strack serve`, then trace
 `http://127.0.0.1:8200/stream.mjpg` from `/ops/traces` (or `strack trace <url>` for a read-only check).
 Expect each pirate account identified, acknowledged (`suspended`) and cut, and the audit chain valid.
@@ -154,6 +165,22 @@ under `var/`; never commit third-party footage).
 - Floats in anything that is hashed (detections, audit data) are rounded to three decimals: longer
   ones do not survive a JSON round trip exactly in `serde_json`, and the stored JSON is re-hashed by
   `strack verify` and the case integrity check (a loaded detection once broke a chain this way).
+- Security rules kept in code: the platform portal accepts a new notice `api_url` only when it resolves
+  to public IPs (`leak::platforms::public_ip`, tested, IPv4 inside IPv6 included) and marks it
+  `api_url_from_platform`; `send_notice` then resolves again, refuses non-public addresses and pins the
+  connection to them (`resolve_to_addrs`), and never follows redirects (admin-set addresses may be
+  internal); `login_failed` never records a
+  username that has no account; a judge reaches an approved case through pending retries only while
+  holding the duty.
+- The stream reader (traces, Cargar sitios' mark reading, embedded players found by `discover`) only
+  opens addresses `source::readable_target` allows: http(s) or rtmp(s), and every resolved address
+  public, checked again on every reconnection. `serve --allow-private-streams` (env
+  `STRACK_ALLOW_PRIVATE_STREAMS`) lifts the public-address rule for local demos only; `demo.ps1`
+  passes it because the demo pirate and platform live on loopback. Read errors go to the log, not to
+  the audit trail. The rule also holds while connecting: `source::reader_client` (the shared
+  `App.http`, used only by the stream reader) resolves through `PublicOnly`, which drops non-public
+  addresses, and follows a redirect only to http(s) on a name or a public address. ffmpeg resolves and
+  follows playlists on its own, so production also denies private ranges at the network edge.
 - Tracer inputs: `trace::start_from` probes the address (`source::probe`): an HTML page goes through
   `discover` and gets one trace per stream found (`Trace.page_url`); anything else is a stream whose
   format (`Trace.format`) picks the reader. ffmpeg runs with `-re` (stream pace), `-protocol_whitelist`
@@ -168,6 +195,20 @@ under `var/`; never commit third-party footage).
   `demo pirate`) locks it and `cargo build --release` fails to link. Stop them, or move the running
   file aside first (`mv target/release/strack.exe target/release/strack-old.exe`: a running image can
   be renamed, not overwritten) and restart them on the new build.
+- Live demo: Windows does not resolve `*.localhost` names, so the pirate gets its own loopback
+  address (`127.0.0.2`) instead of a name; Chrome skips proxies for loopback unless started with
+  `--proxy-bypass-list=<-loopback>`. `Start-Process -ArgumentList` with an array does not quote, so
+  values with spaces (provider names, video paths) carry explicit quotes in `demo.ps1`. Never pipe the
+  demo script's output: the viewer Chrome inherits the pipe and the command never returns.
+- Pirate player with sound: muxing the pirate's reworked frames with the sound of a second HTTP
+  session stalled the browser (two clocks; the muxer holds video waiting for audio). The page's
+  `/stream.mp4` therefore relays the stolen account's own MP4 session as it arrives (picture and sound
+  from the platform's encoder, in sync) and the page script asks again when it ends; `/stream.mjpg`
+  stays the reworked copy (resized, logo, banner). The reconnect script builds its address from the
+  `<video>` element so `discover` does not take it for another stream.
+- H.264 on the GPU: `demo/encoder.rs` uses `h264_nvenc` (low-latency, no B-frames) when
+  `STRACK_H264_ENCODER=h264_nvenc`; `demo.ps1` sets it when `nvidia-smi` exists and ffmpeg lists NVENC.
+  Consumer NVIDIA cards cap concurrent NVENC sessions, which a demo stays well under.
 - If port 8080 is taken on the machine, run the simulator with `--puerto <other>` and point
   `serve --simulator` at it.
 - Leak tracing: the invisible watermark is read from frames `PERIOD_SECS / 2` (1 s) apart, so the

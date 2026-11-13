@@ -374,9 +374,14 @@ pub async fn case_page(
     };
     let many = app.matches.len() > 1;
     let match_name = match_label(&m.key, core.store.match_info.as_ref().map(|i| i.name.as_str()));
+    let duty = duty_of(&core, &app.settings, &judge_id);
+    // Pending retries are signed by the judge who holds the duty, so only that judge reaches an
+    // approved case through them.
     let mine = case.assigned_judge.as_deref() == Some(judge_id.as_str())
         || case.decision.as_ref().is_some_and(|d| d.judge_id == judge_id)
-        || (case.status == CaseStatus::Approved && retries_by_case(&core.store).iter().any(|(c, _)| *c == case.id));
+        || (duty.holder
+            && case.status == CaseStatus::Approved
+            && retries_by_case(&core.store).iter().any(|(c, _)| *c == case.id));
     if !mine {
         return error_page(
             StatusCode::FORBIDDEN,
@@ -385,7 +390,6 @@ pub async fn case_page(
             "Este expediente lo tiene asignado otro juez.",
         );
     }
-    let duty = duty_of(&core, &app.settings, &judge_id);
     let actionable =
         case.status == CaseStatus::PendingJudge && case.assigned_judge.as_deref() == Some(judge_id.as_str());
     let orders: Vec<&OrderRecord> = core.store.orders_of_case(&case.id).collect();

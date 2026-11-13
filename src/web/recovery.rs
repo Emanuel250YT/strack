@@ -104,56 +104,102 @@ fn parse_role(value: &str) -> Role {
     }
 }
 
+/// The step of the access form that holds the field an error code is about.
+fn error_step(code: Option<&str>) -> usize {
+    match code {
+        Some("organism_required") => 2,
+        Some("contact_required") | Some("too_many_requests") | Some("internal") => 3,
+        _ => 1,
+    }
+}
+
+const ROLE_CHOICES: [(&str, Role, &str); 4] = [
+    ("operator", Role::Operator, "Carga sitios piratas y sigue cada bloqueo en vivo."),
+    ("judge", Role::Judge, "Revisa los pedidos y firma las órdenes durante su turno."),
+    ("platform", Role::Platform, "Ve las cuentas de su servicio que aparecen en copias piratas."),
+    ("admin", Role::Admin, "Gestiona cuentas, plataformas y el registro de proveedores."),
+];
+
+/// Asking for an account, one step at a time: who you are, your role, how to reach you. Without
+/// script every step shows at once and the form works the same.
 fn access_form(values: &AccessForm, error: Option<&str>) -> Markup {
     let role = parse_role(&values.role);
+    let start = if error.is_some() { error_step(error) } else { 1 };
     html! {
-        h1 { "Pedir acceso" }
+        p class="eyebrow" { "Pedir acceso" }
+        h1 { "Creá tu cuenta en Strack" }
         p class="lede" {
-            "Strack es para jueces, operación y administración de la autoridad que emite las órdenes. Administración "
-            "revisa cada pedido: si corresponde, crea la cuenta y te entrega un enlace de un solo uso para elegir tu contraseña."
+            "La administración revisa cada pedido. Si corresponde, crea la cuenta y te manda un enlace de un solo uso "
+            "para que elijas tu contraseña."
         }
+        ol class="stepper" aria-hidden="true" data-stepper {
+            li { span { "1" } "Quién sos" }
+            li { span { "2" } "Tu rol" }
+            li { span { "3" } "Contacto" }
+        }
+        p class="visually-hidden" aria-live="polite" data-step-status {}
         (flash(error))
-        form method="post" action="/access" class="form-grid wide" data-once {
-            div class="form-row" {
-                div {
-                    label for="ac-name" { "Nombre y apellido" }
-                    input type="text" id="ac-name" name="name" required maxlength="300" value=(values.name) autocomplete="name";
+        form method="post" action="/access" class="form-grid wide steps" data-steps data-start=(start) data-once {
+            fieldset class="step" data-step {
+                legend { "Quién sos" }
+                div class="form-row" {
+                    div {
+                        label for="ac-name" { "Nombre y apellido" }
+                        input type="text" id="ac-name" name="name" required maxlength="300" value=(values.name) autocomplete="name";
+                    }
+                    div {
+                        label for="ac-username" { "Usuario que querés" }
+                        input type="text" id="ac-username" name="username" required maxlength="32" pattern="[a-z0-9][a-z0-9._\\-]{2,31}"
+                            value=(values.username) autocomplete="off" autocapitalize="none" spellcheck="false"
+                            aria-describedby="ac-username-hint";
+                        p class="hint" id="ac-username-hint" { "Minúsculas, números, punto o guion; de 3 a 32 caracteres." }
+                    }
                 }
-                div {
-                    label for="ac-username" { "Usuario que querés" }
-                    input type="text" id="ac-username" name="username" required maxlength="32" value=(values.username)
-                        autocomplete="off" autocapitalize="none" spellcheck="false" aria-describedby="ac-username-hint";
-                    p class="hint" id="ac-username-hint" { "Minúsculas, números, punto o guion; de 3 a 32 caracteres." }
+                div class="step-nav" hidden data-step-nav {
+                    span {}
+                    button class="button primary" type="button" data-step-next { "Siguiente" }
                 }
             }
-            div class="form-row" {
-                div {
-                    label for="ac-role" { "Rol" }
-                    select id="ac-role" name="role" {
-                        @for (value, r) in [("operator", Role::Operator), ("judge", Role::Judge), ("admin", Role::Admin), ("platform", Role::Platform)] {
-                            option value=(value) selected[r == role] { (role_label(r)) }
+            fieldset class="step" data-step {
+                legend { "Tu rol" }
+                div class="role-options" role="radiogroup" aria-label="Rol" {
+                    @for (value, r, text) in ROLE_CHOICES {
+                        label class="role-option" {
+                            input type="radio" name="role" value=(value) checked[r == role] required;
+                            span class="role-name" { (role_label(r)) }
+                            span class="role-text" { (text) }
                         }
                     }
                 }
                 div {
-                    label for="ac-organism" { "Organismo" }
+                    label for="ac-organism" { "Organismo o empresa" }
                     input type="text" id="ac-organism" name="organism" required maxlength="300" value=(values.organism)
-                        autocomplete="organization";
+                        autocomplete="organization" placeholder="Juzgado, fiscalía, regulador o plataforma";
+                }
+                div class="step-nav" hidden data-step-nav {
+                    button class="button" type="button" data-step-back { "Atrás" }
+                    button class="button primary" type="button" data-step-next { "Siguiente" }
                 }
             }
-            div {
-                label for="ac-contact" { "Cómo te contactamos" }
-                input type="text" id="ac-contact" name="contact" required maxlength="300" value=(values.contact)
-                    aria-describedby="ac-contact-hint";
-                p class="hint" id="ac-contact-hint" { "Un correo o teléfono institucional: por ahí te llega el enlace." }
+            fieldset class="step" data-step {
+                legend { "Contacto" }
+                div {
+                    label for="ac-contact" { "Cómo te contactamos" }
+                    input type="text" id="ac-contact" name="contact" required maxlength="300" value=(values.contact)
+                        aria-describedby="ac-contact-hint";
+                    p class="hint" id="ac-contact-hint" { "Un correo o teléfono institucional: por ahí te llega el enlace." }
+                }
+                div {
+                    label for="ac-reason" { "Para qué necesitás la cuenta (opcional)" }
+                    textarea id="ac-reason" name="reason" rows="3" maxlength="300" { (values.reason) }
+                }
+                div class="step-nav" {
+                    button class="button" type="button" hidden data-step-back { "Atrás" }
+                    button class="button primary" type="submit" { "Enviar el pedido" }
+                }
             }
-            div {
-                label for="ac-reason" { "Para qué necesitás la cuenta" }
-                textarea id="ac-reason" name="reason" rows="3" maxlength="300" { (values.reason) }
-            }
-            div class="form-actions" { button class="button primary" type="submit" { "Enviar el pedido" } }
         }
-        p { a href="/login" { "Volver a ingresar" } }
+        p class="auth-alt" { "¿Ya tenés cuenta? " a href="/login" { "Ingresá" } }
     }
 }
 
