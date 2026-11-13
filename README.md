@@ -13,6 +13,41 @@ public transparency registry.
 > All data is fictitious and nothing real is blocked: the platform only talks to the challenge
 > simulator. This is not legal advice.
 
+## Live demo
+
+The whole circuit runs live at **https://strack.cloudycoding.com**, with nothing scripted: a
+licensed platform broadcasting a match, a pirate site restreaming it, Strack, four internet providers
+and one provider's subscriber who is watching the pirate.
+
+| What | Address |
+|---|---|
+| Strack (transparency registry and sign-in) | https://strack.cloudycoding.com |
+| The licensed platform, TV Ficticia Play | https://tv.cloudycoding.com |
+| The pirate site | https://pirata.cloudycoding.com |
+| The pirate site as a subscriber of the Aurora provider sees it | https://aurora.cloudycoding.com |
+
+| User | Password | Role |
+|---|---|---|
+| `fiscalia` | `fiscalia-demo-2026` | Operations: loads pirate sites |
+| `laura` | `laura-demo-2026` | Judge on duty during the first half of the day |
+| `martin` | `martin-demo-2026` | Judge on duty during the second half |
+| `tvf` | `tvf-demo-2026` | TV Ficticia Play's portal |
+
+Try it in four steps:
+
+1. Open https://aurora.cloudycoding.com: the match plays on the pirate site, seen through Aurora.
+2. Sign in to Strack as `fiscalia`, open **Cargar sitios** and paste `https://pirata.cloudycoding.com/`.
+   Strack reads the licensed platform's invisible mark from the stream and opens the case within
+   seconds.
+3. Sign in as `laura` (another browser or a private window), open the case and press
+   **Aprobar y firmar**. The order reaches the four providers; the Aurora page stops at once and a
+   reload shows "Este sitio está bloqueado por orden judicial".
+4. Back in **Cargar sitios**, load the pirate again with "Rastrear también la cuenta de origen": the
+   pirate's subscriber accounts are identified and suspended (the `tvf` portal lists them).
+
+The public deployment has no administrator account and starts fresh on every restart
+(`deploy/Dockerfile`, see [Public deployment](#quick-start)).
+
 ```mermaid
 flowchart LR
     A[Detection feed] --> B[Case file<br/>watermark · server · collateral · hashes]
@@ -85,6 +120,12 @@ page in Cargar sitios: Strack reads the platform's invisible mark from the strea
 with that evidence; when the judge signs, the subscriber's stream stops and the block page appears.
 The stream reader only opens public internet addresses; `serve --allow-private-streams` lifts that
 for local demos (the demo script passes it).
+
+**Public deployment:** `docker build -f deploy/Dockerfile -t strack .` builds Strack with ffmpeg; the
+image runs the same live demo for a public server (`PIRATE_HOST`, `PIRATE_URL`, `VIDEO`, `MATCH_NAME`
+in the environment; ports 13000 Strack, 18100 platform, 18200 pirate, 19180 the provider's edge serving
+the pirate site to its subscribers). It drops the administrator account and generates the intake token
+and the platform staff password, since the demo passwords are public.
 
 By hand. Requirements: Rust 1.85+ and Python 3.9+ (for the challenge simulator).
 

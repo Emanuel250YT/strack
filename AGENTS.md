@@ -145,6 +145,14 @@ subscriber watching the pirate through it. As `fiscalia` load `http://127.0.0.2:
 within seconds with the TV Ficticia Play licensee watermark; once a judge approves, the viewer's stream
 stops and a reload shows the 451 block page; loading again with "Rastrear" suspends the accounts.
 
+Public live demo: `deploy/Dockerfile` builds Strack with ffmpeg and runs `deploy/live-demo.sh` (config
+written by `deploy/live-config.py`: standalone match kicked off at start, no administrator account,
+random intake token and platform staff password). Four receivers, Aurora's edge on 19180 with
+`--gateway-site <pirate host>=http://127.0.0.1:18200` so a subscriber opens the edge's own address and
+watches the pirate through it, platform on 18100 (`VIDEO` mounted read-only, or synthetic), pirate on
+18200 with `--public-url`, Strack on 13000 with `--secure-cookies` and the reader on public addresses
+only: the pirate is loaded by its public name. Publish the four ports behind a TLS reverse proxy.
+
 Leak tracing: `strack demo platform`, `strack demo pirate`, `strack serve`, then trace
 `http://127.0.0.1:8200/stream.mjpg` from `/ops/traces` (or `strack trace <url>` for a read-only check).
 Expect each pirate account identified, acknowledged (`suspended`) and cut, and the audit chain valid.

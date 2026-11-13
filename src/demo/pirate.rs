@@ -74,6 +74,11 @@ pub struct PirateArgs {
     /// Name shown on the pirate overlay.
     #[arg(long, default_value = "pelotaya.test")]
     pub site: String,
+    /// The address people reach this site at when it is published behind a proxy (for example
+    /// `https://pirata.example.com`); the page shows its stream addresses under it. By default the
+    /// listen address.
+    #[arg(long)]
+    pub public_url: Option<String>,
     #[arg(long, default_value_t = 60)]
     pub quality: u8,
     /// Size of the restream relative to the original picture, in percent.
@@ -352,7 +357,7 @@ async fn home(State(p): State<Arc<Pirate>>) -> Html<String> {
                             " · cuentas usadas: " (status.accounts_used) " de " (status.accounts_total) " · "
                             a href="/history" { "historial de cuentas" } }
                         p { "Origen: " span class="mono" { (p.args.platform) } ". Este sitio re-codifica y achica la imagen y tapa una esquina con su logo para esconder la marca." }
-                        p { "Para rastrearlo en Strack: " span class="mono" { "http://" (p.args.listen) "/stream.mjpg" } }
+                        p { "Para rastrearlo en Strack: " span class="mono" { (public_base(&p.args)) "/stream.mjpg" } }
                     }
                 }
                 footer class="wrap foot" { p { "Sitio inventado para la demo de Strack. No retransmite nada real." } }
@@ -473,6 +478,14 @@ const RECONNECT_JS: &str = "(function(){var v=document.querySelector('video');if
 var base=v.getAttribute('src');function again(){if(t)return;t=setTimeout(function(){t=null;v.src=base+'?t='+Date.now();\
 var p=v.play();if(p&&p.catch)p.catch(function(){});},2500);}\
 v.addEventListener('ended',again);v.addEventListener('error',again);})();";
+
+/// Where people reach this site: `--public-url`, or the listen address.
+fn public_base(args: &PirateArgs) -> String {
+    match &args.public_url {
+        Some(url) => url.trim_end_matches('/').to_string(),
+        None => format!("http://{}", args.listen),
+    }
+}
 
 /// The MP4 address of a licensed session from its MJPEG address (same session, same key).
 fn mp4_of(mjpeg_url: &str) -> Option<String> {

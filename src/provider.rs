@@ -55,6 +55,13 @@ pub struct ProviderArgs {
     /// The provider's name, shown on the block page.
     #[arg(long)]
     pub name: Option<String>,
+    /// With `--gateway`, serve one site in reverse-proxy form instead of being an open proxy,
+    /// `<public host>=<upstream URL>`: every request goes to the upstream and is checked against the
+    /// public host, so a subscriber opens the edge's own address and watches that site through it.
+    /// Proxy requests for any other destination are refused, which keeps a published edge from
+    /// reaching internal services.
+    #[arg(long, requires = "gateway")]
+    pub gateway_site: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -69,6 +76,8 @@ struct Stored {
 struct Receiver {
     id: String,
     name: String,
+    /// `--gateway-site`: the public host blocks are checked against, and the upstream base URL.
+    site: Option<(String, String)>,
     kickoff: DateTime<FixedOffset>,
     accepts: Vec<String>,
     data: PathBuf,
@@ -222,15 +231,29 @@ dd{margin:0;font-weight:600;text-align:right}.small{font-size:14px;color:#5b5b63
 /// The provider's network edge: forwards its subscribers' plain HTTP requests, unless an applied
 /// order blocks the site. A response already streaming stops as soon as an order covers it.
 async fn gateway(State(r): State<Arc<Receiver>>, req: Request) -> Response {
-    let Some(authority) = req.uri().authority().cloned() else {
-        return (StatusCode::BAD_REQUEST, format!("Red de {}: usá esta dirección como proxy HTTP.", r.name))
-            .into_response();
-    };
     if req.method() == Method::CONNECT {
         return (StatusCode::METHOD_NOT_ALLOWED, "Solo HTTP en esta red de prueba.").into_response();
     }
-    let host = authority.host().trim_start_matches('[').trim_end_matches(']').to_string();
-    let port = authority.port_u16().unwrap_or(80);
+    // Without a site this is the provider's forward proxy (a local demo's viewer); with one, only that
+    // site is served, so a proxy request naming any target is refused.
+    let (host, port, url) = match (req.uri().authority().cloned(), &r.site) {
+        (Some(_), Some(_)) => {
+            return (StatusCode::FORBIDDEN, "Esta red solo sirve el sitio configurado.").into_response();
+        }
+        (Some(authority), None) => (
+            authority.host().trim_start_matches('[').trim_end_matches(']').to_string(),
+            authority.port_u16().unwrap_or(80),
+            req.uri().to_string(),
+        ),
+        (None, Some((public, upstream))) => {
+            let path = req.uri().path_and_query().map_or("/", |p| p.as_str());
+            (public.clone(), 443, format!("{upstream}{path}"))
+        }
+        (None, None) => {
+            return (StatusCode::BAD_REQUEST, format!("Red de {}: usá esta dirección como proxy HTTP.", r.name))
+                .into_response();
+        }
+    };
     let addrs: Vec<IpAddr> = match host.parse::<IpAddr>() {
         Ok(ip) => vec![ip],
         Err(_) => tokio::net::lookup_host((host.as_str(), port))
@@ -242,7 +265,6 @@ async fn gateway(State(r): State<Arc<Receiver>>, req: Request) -> Response {
         tracing::info!(host = %host, order = %order.order_id, "request blocked");
         return block_page(&r, &order);
     }
-    let url = req.uri().to_string();
     let method = req.method().clone();
     let headers = forwardable(req.headers());
     let Ok(body) = axum::body::to_bytes(req.into_body(), 16 * 1024 * 1024).await else {
@@ -399,7 +421,16 @@ pub async fn run(args: ProviderArgs) -> anyhow::Result<()> {
         .no_proxy()
         .connect_timeout(Duration::from_secs(5))
         .build()?;
+    let site = match &args.gateway_site {
+        Some(spec) => {
+            let (public, upstream) =
+                spec.split_once('=').context("--gateway-site must be <public host>=<upstream URL>")?;
+            Some((public.trim().to_ascii_lowercase(), upstream.trim().trim_end_matches('/').to_string()))
+        }
+        None => None,
+    };
     let receiver = Arc::new(Receiver {
+        site,
         id: args.id.clone(),
         name: args.name.clone().unwrap_or_else(|| args.id.clone()),
         kickoff,
