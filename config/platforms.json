@@ -4,7 +4,8 @@
       "id": "tvf",
       "name": "TV Ficticia Play",
       "api_url": "http://127.0.0.1:8100",
-      "notice_token": "tvf-demo-notice-token-2026"
+      "notice_token": "tvf-demo-notice-token-2026",
+      "api_url_from_platform": false
     }
   ]
 }

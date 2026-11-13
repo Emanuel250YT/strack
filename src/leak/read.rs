@@ -77,7 +77,7 @@ async fn read_one(app: &Arc<App>, url: &str) -> anyhow::Result<Option<(StreamFor
     };
     let codes = app.platforms().platforms.iter().map(|p| platform_code(&p.id)).collect();
     let mut scanner = Some(Scanner::new(codes));
-    let mut source = FrameSource::open(&app.http, url, format, &app.settings.ffmpeg).await?;
+    let mut source = FrameSource::open(&app.http, url, format, &app.settings.ffmpeg, app.settings.egress_proxy).await?;
     let started = Instant::now();
     let mut last_scan: Option<Instant> = None;
     loop {

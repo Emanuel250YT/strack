@@ -159,6 +159,20 @@ impl reqwest::dns::Resolve for PublicOnly {
     }
 }
 
+/// `url` with its host replaced by one of its public addresses.
+async fn pin_public(url: &str) -> anyhow::Result<String> {
+    let mut parsed = reqwest::Url::parse(url).context("not an address")?;
+    let host = parsed.host_str().context("no host")?.to_string();
+    let port = parsed.port().unwrap_or(1935);
+    let ip = tokio::net::lookup_host((host.as_str(), port))
+        .await?
+        .map(|a| a.ip())
+        .find(|ip| crate::leak::platforms::public_ip(*ip))
+        .context("the host has no public address")?;
+    parsed.set_ip_host(ip).map_err(|()| anyhow::anyhow!("cannot pin the address"))?;
+    Ok(parsed.to_string())
+}
+
 /// Whether the stream reader may open `url`: http(s) or rtmp(s) only and, unless private addresses
 /// are allowed (local demos), only when every address the host resolves to is public, so an
 /// address given to Strack cannot reach internal services.
@@ -217,11 +231,16 @@ pub struct FfmpegFrames {
 }
 
 impl FfmpegFrames {
-    pub fn spawn(ffmpeg: &str, url: &str) -> anyhow::Result<Self> {
+    /// With `proxy` (the egress guard) every HTTP(S) request ffmpeg makes, playlist entries and
+    /// redirects included, goes through it.
+    pub fn spawn(ffmpeg: &str, url: &str, proxy: Option<SocketAddr>) -> anyhow::Result<Self> {
         let mut cmd = Command::new(ffmpeg);
         cmd.args(["-hide_banner", "-loglevel", "error", "-nostdin", "-protocol_whitelist", PROTOCOLS]);
         if url.starts_with("http") {
             cmd.args(["-reconnect", "1", "-reconnect_streamed", "1", "-reconnect_delay_max", "5"]);
+            if let Some(proxy) = proxy {
+                cmd.args(["-http_proxy", &format!("http://{proxy}")]);
+            }
         }
         let mut child = cmd
             .args(["-rw_timeout", RW_TIMEOUT_US, "-re", "-i", url, "-an"])
@@ -272,10 +291,24 @@ pub enum FrameSource {
 
 impl FrameSource {
     /// Connects to `url`, read natively (MJPEG, JPEG) or through ffmpeg (everything else).
-    pub async fn open(http: &reqwest::Client, url: &str, format: StreamFormat, ffmpeg: &str) -> anyhow::Result<Self> {
+    pub async fn open(
+        http: &reqwest::Client,
+        url: &str,
+        format: StreamFormat,
+        ffmpeg: &str,
+        proxy: Option<SocketAddr>,
+    ) -> anyhow::Result<Self> {
         match format {
             StreamFormat::Mjpeg | StreamFormat::Jpeg => Ok(FrameSource::Native(mjpeg::open(http, url).await?)),
-            _ => Ok(FrameSource::Ffmpeg(Box::new(FfmpegFrames::spawn(ffmpeg, url)?))),
+            _ => {
+                // RTMP does not go through an HTTP proxy: under the guard it connects to the public
+                // address checked here, not to whatever the name resolves to later.
+                let url = match (proxy, StreamFormat::from_url(url)) {
+                    (Some(_), Some(StreamFormat::Rtmp)) if url.starts_with("rtmp://") => pin_public(url).await?,
+                    _ => url.to_string(),
+                };
+                Ok(FrameSource::Ffmpeg(Box::new(FfmpegFrames::spawn(ffmpeg, &url, proxy)?)))
+            }
         }
     }
 

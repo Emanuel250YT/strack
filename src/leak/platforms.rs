@@ -21,9 +21,15 @@ pub struct PlatformEntry {
     /// Bearer token the platform issued to Strack (demo value in `config/platforms.json`).
     pub notice_token: String,
     /// The platform set `api_url` itself from its portal: notices then go only to public addresses,
-    /// checked and pinned at send time. An address an admin set is trusted (it may be internal).
-    #[serde(default)]
+    /// checked and pinned at send time. An address an admin set is trusted (it may be internal); the
+    /// admin pages write `false` explicitly. An entry without the field (unknown origin, such as a file
+    /// from an older version) is treated as set by the platform, so it is checked rather than trusted.
+    #[serde(default = "unknown_origin")]
     pub api_url_from_platform: bool,
+}
+
+fn unknown_origin() -> bool {
+    true
 }
 
 fn public_v4(v4: Ipv4Addr) -> bool {
@@ -199,5 +205,23 @@ pub async fn send_notice(platform: &PlatformEntry, notice: &NoticeRequest) -> Re
         Err(NoticeError::Transport(format!("HTTP {}: {code}", status.as_u16())))
     } else {
         Err(NoticeError::Rejected { status: status.as_u16(), code })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::leak::platforms::PlatformEntry;
+
+    #[test]
+    fn an_address_of_unknown_origin_is_checked_not_trusted() {
+        let entry: PlatformEntry =
+            serde_json::from_str(r#"{"id":"x","name":"X","api_url":"http://10.0.0.5","notice_token":"t"}"#)
+                .expect("entry");
+        assert!(entry.api_url_from_platform, "no provenance: treated as set by the platform");
+        let admin: PlatformEntry = serde_json::from_str(
+            r#"{"id":"x","name":"X","api_url":"http://10.0.0.5","notice_token":"t","api_url_from_platform":false}"#,
+        )
+        .expect("entry");
+        assert!(!admin.api_url_from_platform);
     }
 }

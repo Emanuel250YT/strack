@@ -35,6 +35,9 @@ pub struct Settings {
     /// Let the stream reader (traces, Cargar sitios) reach local and private addresses. Off by
     /// default so nobody can point it at internal services; local demos turn it on.
     pub allow_private_streams: bool,
+    /// Loopback proxy ffmpeg reaches the web through when private addresses are not allowed
+    /// (`leak::egress`); `None` when they are.
+    pub egress_proxy: Option<std::net::SocketAddr>,
     /// Where accounts and the platform registry are saved when edited from the web.
     pub accounts_path: PathBuf,
     pub platforms_path: PathBuf,

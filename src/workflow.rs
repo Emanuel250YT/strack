@@ -1171,6 +1171,7 @@ mod tests {
             intake_token: None,
             ffmpeg: "ffmpeg".into(),
             allow_private_streams: false,
+            egress_proxy: None,
             accounts_path: std::env::temp_dir().join("accounts.json"),
             platforms_path: std::env::temp_dir().join("platforms.json"),
         }

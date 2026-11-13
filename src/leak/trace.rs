@@ -394,7 +394,8 @@ impl Tracer {
         if !known {
             self.with_trace(true, |t| t.format = Some(label));
         }
-        FrameSource::open(&self.app.http, &self.url, format, &self.app.settings.ffmpeg).await
+        FrameSource::open(&self.app.http, &self.url, format, &self.app.settings.ffmpeg, self.app.settings.egress_proxy)
+            .await
     }
 
     /// Reads one connection until it ends (`None`: reconnect) or the trace must end.

@@ -217,6 +217,11 @@ async fn serve(args: ServeArgs) -> anyhow::Result<()> {
         let config = StandaloneConfig::load(path)?;
         sources.push(MatchSource::Standalone(Box::new(Standalone::new(config, &path.display().to_string())?)));
     }
+    let egress_proxy = if args.allow_private_streams {
+        None
+    } else {
+        Some(crate::leak::egress::start(crate::leak::platforms::public_ip).await?)
+    };
     let settings = Settings {
         poll_interval: Duration::from_millis(args.poll_ms.max(100)),
         domain_extra_min: args.domain_extra_min,
@@ -226,6 +231,7 @@ async fn serve(args: ServeArgs) -> anyhow::Result<()> {
         intake_token: args.intake_token.clone().filter(|t| !t.trim().is_empty()),
         ffmpeg: args.ffmpeg.clone(),
         allow_private_streams: args.allow_private_streams,
+        egress_proxy,
         accounts_path: args.accounts.clone(),
         platforms_path: args.platforms.clone(),
     };
@@ -490,7 +496,7 @@ async fn trace(args: TraceArgs) -> anyhow::Result<()> {
         }
     };
     eprintln!("reading {url} as {}", format.label());
-    let mut reader = FrameSource::open(&http, &url, format, &args.ffmpeg).await?;
+    let mut reader = FrameSource::open(&http, &url, format, &args.ffmpeg, None).await?;
     let mut seen = HashSet::new();
     let (mut frames, mut scanned) = (0u64, 0u64);
     let mut last_scan: Option<Instant> = None;

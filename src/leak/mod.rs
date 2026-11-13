@@ -7,6 +7,7 @@
 //! at the source, without blocking any IP or domain.
 
 pub mod discover;
+pub mod egress;
 pub mod extract;
 pub mod jpeg;
 pub mod mark;
